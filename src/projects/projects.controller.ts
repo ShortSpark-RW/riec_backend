@@ -2,7 +2,6 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
-import { getPagination } from '../common/utils/pagination.util';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -24,17 +23,10 @@ export class ProjectsController {
     @Query('featured') featured?: string,
     @Query() pagination?: PaginationDto,
   ) {
-    const { page, pageSize, skip, take } = getPagination(pagination ?? {});
-    const filters = {
-      service,
-      location,
-      featured: featured === 'true' ? true : undefined,
-    };
-    const result = await this.projectsService.listPublic(filters, {
-      skip,
-      take,
-    });
-    return { ...result, page, pageSize };
+    const { page, pageSize } = pagination ?? { page: 1, pageSize: 20 };
+    const filters = { service, location, featured: featured === 'true' ? true : undefined };
+    const result = await this.projectsService.list(filters, page, pageSize);
+    return result;
   }
 
   @Get(':slug')
