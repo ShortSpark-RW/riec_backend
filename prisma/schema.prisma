@@ -45,12 +45,33 @@ enum ProjectDocumentType {
   HEALTH_SAFETY_PLAN
 }
 
+enum Role {
+  CLIENT
+  COMPANY_WORKER
+  ENGINEER
+  ADMIN
+}
+
 model AdminUser {
   id           String    @id @default(auto()) @map("_id") @db.ObjectId
   email        String    @unique
   passwordHash String
   createdAt    DateTime  @default(now())
   lastLoginAt  DateTime?
+}
+
+model User {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  email        String    @unique
+  passwordHash String?
+  role         Role      @default(CLIENT)
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+
+  // relations
+  projectsOwned  Project[]           @relation("ProjectOwner")
+  uploadedAssets ProjectAsset[]      @relation("UploadedAssets")
+  assignments    ProjectAssignment[]
 }
 
 model Service {
@@ -74,10 +95,13 @@ model Project {
   updatedAt   DateTime @updatedAt
 
   // relations
-  images       ProjectImage[]     @relation("ProjectImages")
-  pricingTiers ProjectPriceTier[] @relation("ProjectTiers")
-  assets       ProjectAsset[]     @relation("ProjectAssets")
-  purchases    Purchase[]         @relation("ProjectPurchases")
+  images       ProjectImage[]      @relation("ProjectImages")
+  pricingTiers ProjectPriceTier[]  @relation("ProjectTiers")
+  assets       ProjectAsset[]      @relation("ProjectAssets")
+  purchases    Purchase[]          @relation("ProjectPurchases")
+  assignments  ProjectAssignment[]
+  ownerId      String?             @db.ObjectId
+  owner        User?               @relation("ProjectOwner", fields: [ownerId], references: [id])
 }
 
 model ProjectImage {
@@ -110,23 +134,39 @@ model ProjectPriceTier {
 }
 
 model ProjectAsset {
-  id             String              @id @default(auto()) @map("_id") @db.ObjectId
-  projectId      String              @db.ObjectId
-  project        Project             @relation("ProjectAssets", fields: [projectId], references: [id])
-  tierId         String?             @db.ObjectId
-  tier           ProjectPriceTier?   @relation("TierAssets", fields: [tierId], references: [id])
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String            @db.ObjectId
+  project   Project           @relation("ProjectAssets", fields: [projectId], references: [id])
+  tierId    String?           @db.ObjectId
+  tier      ProjectPriceTier? @relation("TierAssets", fields: [tierId], references: [id])
 
-  documentType   ProjectDocumentType
-  version        String?
-  
+  documentType ProjectDocumentType
+  version      String?
+
   s3Key          String
   filename       String
   fileType       String
   size           Int
-  isDownloadable Boolean             @default(true)
+  isDownloadable Boolean @default(true)
+
+  uploadedById String? @db.ObjectId
+  uploadedBy   User?   @relation("UploadedAssets", fields: [uploadedById], references: [id])
 
   @@index([projectId])
   @@index([tierId])
+}
+
+model ProjectAssignment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId  String   @db.ObjectId
+  project    Project  @relation(fields: [projectId], references: [id])
+  userId     String   @db.ObjectId
+  user       User     @relation(fields: [userId], references: [id])
+  role       String?
+  assignedAt DateTime @default(now())
+
+  @@index([projectId])
+  @@index([userId])
 }
 
 model ContactSubmission {

@@ -31,6 +31,24 @@ export class S3Service {
     return { key };
   }
 
+  generateUniqueKey(fileName: string, prefix = 'projects', folder = 'assets') {
+    const safe = `${Date.now()}_${fileName.replace(/\s+/g, '_')}`;
+    return `${prefix}/${folder}/${safe}`;
+  }
+
+  async generatePresignedUploadUrl(
+    key: string,
+    contentType: string,
+    expiresIn = 900,
+  ) {
+    const cmd = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ContentType: contentType,
+    });
+    return getSignedUrl(this.client, cmd, { expiresIn });
+  }
+
   async deleteFile(key: string) {
     await this.client.send(
       new DeleteObjectCommand({
@@ -45,5 +63,3 @@ export class S3Service {
     return getSignedUrl(this.client, cmd, { expiresIn: expiresInSeconds });
   }
 }
-
-

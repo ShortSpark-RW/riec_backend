@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { IsEmail, IsString } from 'class-validator';
 
@@ -32,6 +32,7 @@ export class PaymentsController {
   }
 
   @Post('webhook/flutterwave')
+  @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Flutterwave webhook handler' })
   handleWebhook(@Body() body: any) {
     return this.paymentsService.handleWebhook(body);
