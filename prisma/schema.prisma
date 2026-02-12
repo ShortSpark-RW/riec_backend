@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum JobApplicationStatus {
+  NEW
+  IN_REVIEW
+  SHORTLISTED
+  REJECTED
+  HIRED
+}
+
+enum PurchaseStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum ProjectDocumentType {
+  PRESENTATION
+  PERSPECTIVE
+  SITE_PLAN
+  ARCHITECTURAL_DRAWINGS
+  STRUCTURAL_DRAWINGS
+  MEP_DRAWINGS
+  GEOTECHNICAL_REPORT
+  TOPOGRAPHICAL_SURVEY
+  BILL_OF_QUANTITIES
+  BUDGET_ESTIMATE
+  ENVIRONMENTAL_IMPACT_ASSESSMENT
+  CONSTRUCTION_PERMIT
+  LAND_TITLE
+  SOIL_TEST_REPORT
+  MATERIAL_SPECIFICATIONS
+  TENDER_DOCUMENT
+  CONTRACT_AGREEMENT
+  PROJECT_SCHEDULE
+  METHOD_STATEMENT
+  QUALITY_CONTROL_PLAN
+  HEALTH_SAFETY_PLAN
+}
+
+model AdminUser {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+}
+
+model Service {
+  id                  String  @id @default(auto()) @map("_id") @db.ObjectId
+  name                String
+  shortDescription    String
+  detailedDescription String?
+  order               Int     @default(0)
+}
+
+model Project {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String   @unique
+  description String
+  location    String
+  services    String[]
+  featured    Boolean  @default(false)
+  purchasable Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // relations
+  images       ProjectImage[]     @relation("ProjectImages")
+  pricingTiers ProjectPriceTier[] @relation("ProjectTiers")
+  assets       ProjectAsset[]     @relation("ProjectAssets")
+  purchases    Purchase[]         @relation("ProjectPurchases")
+}
+
+model ProjectImage {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String  @db.ObjectId
+  project   Project @relation("ProjectImages", fields: [projectId], references: [id])
+  s3Key     String
+  url       String
+  caption   String?
+  order     Int     @default(0)
+
+  @@index([projectId])
+}
+
+model ProjectPriceTier {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String  @db.ObjectId
+  project     Project @relation("ProjectTiers", fields: [projectId], references: [id])
+  name        String
+  description String?
+  currency    String
+  amount      Float
+  isActive    Boolean @default(true)
+
+  // back-relations
+  assets    ProjectAsset[] @relation("TierAssets")
+  purchases Purchase[]     @relation("TierPurchases")
+
+  @@index([projectId])
+}
+
+model ProjectAsset {
+  id             String              @id @default(auto()) @map("_id") @db.ObjectId
+  projectId      String              @db.ObjectId
+  project        Project             @relation("ProjectAssets", fields: [projectId], references: [id])
+  tierId         String?             @db.ObjectId
+  tier           ProjectPriceTier?   @relation("TierAssets", fields: [tierId], references: [id])
+
+  documentType   ProjectDocumentType
+  version        String?
+  
+  s3Key          String
+  filename       String
+  fileType       String
+  size           Int
+  isDownloadable Boolean             @default(true)
+
+  @@index([projectId])
+  @@index([tierId])
+}
+
+model ContactSubmission {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  message   String
+  createdAt DateTime @default(now())
+  read      Boolean  @default(false)
+}
+
+model Job {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug             String   @unique
+  title            String
+  location         String
+  employmentType   String
+  department       String
+  description      String
+  requirements     String
+  responsibilities String
+  isPublished      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  applications JobApplication[]
+}
+
+model JobApplication {
+  id          String               @id @default(auto()) @map("_id") @db.ObjectId
+  jobId       String               @db.ObjectId
+  job         Job                  @relation(fields: [jobId], references: [id])
+  fullName    String
+  email       String
+  phone       String?
+  cvS3Key     String?
+  cvUrl       String?
+  coverLetter String?
+  createdAt   DateTime             @default(now())
+  status      JobApplicationStatus @default(NEW)
+  notes       String?
+
+  @@index([jobId])
+}
+
+model Purchase {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  projectId      String           @db.ObjectId
+  project        Project          @relation("ProjectPurchases", fields: [projectId], references: [id])
+  tierId         String           @db.ObjectId
+  tier           ProjectPriceTier @relation("TierPurchases", fields: [tierId], references: [id])
+  email          String
+  fullName       String
+  flutterwaveRef String
+  amount         Float
+  currency       String
+  status         PurchaseStatus   @default(PENDING)
+  downloadToken  String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([projectId])
+  @@index([tierId])
+}
