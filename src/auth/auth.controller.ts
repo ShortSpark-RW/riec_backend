@@ -1,5 +1,14 @@
 import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiProperty } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiProperty,
+  ApiUnauthorizedResponse,
+  ApiForbiddenResponse,
+} from '@nestjs/swagger';
 import { IsEmail, IsString } from 'class-validator';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -15,7 +24,7 @@ class LoginDto {
   email: string;
 
   @IsString()
-  @ApiProperty({ example: 'strongpassword' })
+  @ApiProperty({ example: 'SecurePass123!' })
   password: string;
 }
 
@@ -43,6 +52,8 @@ export class AuthController {
       example: { accessToken: 'eyJhbGci...', expiresIn: 86400, role: 'ADMIN' },
     },
   })
+  @ApiBadRequestResponse({ description: 'Validation error.' })
+  @ApiUnauthorizedResponse({ description: 'Invalid credentials.' })
   login(@Body() body: LoginDto) {
     const { email, password } = body;
     return this.authService.login(email, password);
@@ -54,7 +65,9 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Register a new admin user (ADMIN only)' })
   @ApiResponse({ status: 201, description: 'Created admin user' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiBadRequestResponse({ description: 'Validation error.' })
+  @ApiUnauthorizedResponse({ description: 'Missing/invalid access token.' })
+  @ApiForbiddenResponse({ description: 'Forbidden.' })
   async register(@Req() req: Request, @Body() body: RegisterDto) {
     // requester info should be available on req.user via JwtAuthGuard
     // pass the requester email (if present) to the service for verification

@@ -12,12 +12,17 @@ import {
 import {
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
+  ApiBadRequestResponse,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { PaginationDto } from './dto/pagination.dto';
+import { ProjectCategory, ProjectType } from '@prisma/client';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -26,9 +31,10 @@ export class ProjectsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new project' })
-  @ApiOkResponse({
+  @ApiCreatedResponse({
     description: 'The created project has been successfully saved.',
   })
+  @ApiBadRequestResponse({ description: 'Validation error.' })
   create(@Body() createProjectDto: CreateProjectDto) {
     return this.projectsService.create(createProjectDto);
   }
@@ -39,20 +45,32 @@ export class ProjectsController {
     description:
       'Paginated list of public projects with images and pricing tiers.',
   })
-  @ApiQuery({ name: 'service', required: false })
+  @ApiQuery({
+    name: 'service',
+    required: false,
+    description: 'Filter by primary Service slug (e.g. architectural-design)',
+  })
   @ApiQuery({ name: 'location', required: false })
   @ApiQuery({ name: 'featured', required: false, description: 'true/false' })
+  @ApiQuery({ name: 'type', required: false, enum: ProjectType })
+  @ApiQuery({ name: 'category', required: false, enum: ProjectCategory })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'pageSize', required: false, example: 20 })
   async list(
     @Query('service') service?: string,
     @Query('location') location?: string,
     @Query('featured') featured?: string,
-    @Query() pagination?: PaginationDto,
+    @Query('type') type?: ProjectType,
+    @Query('category') category?: ProjectCategory,
+    @Query('page') page = 1,
+    @Query('pageSize') pageSize = 20,
   ) {
-    const { page, pageSize } = pagination ?? { page: 1, pageSize: 20 };
     const filters = {
       service,
       location,
       featured: featured === 'true' ? true : undefined,
+      type,
+      category,
     };
     const result = await this.projectsService.list(filters, page, pageSize);
     return result;
@@ -64,16 +82,20 @@ export class ProjectsController {
     description:
       'Project details including images, pricing tiers, and downloadable assets.',
   })
+  @ApiParam({ name: 'slug', example: 'modern-family-villa' })
+  @ApiNotFoundResponse({ description: 'Project not found.' })
   getBySlug(@Param('slug') slug: string) {
     return this.projectsService.getBySlug(slug);
   }
 
-  @Get(':id')
+  @Get('id/:id')
   @ApiOperation({ summary: 'Get a project by ID' })
   @ApiOkResponse({
     description:
       'Project details including images, pricing tiers, and downloadable assets.',
   })
+  @ApiParam({ name: 'id', example: '65f34e7e0a2b3c4d5e6f7890' })
+  @ApiNotFoundResponse({ description: 'Project not found.' })
   findOne(@Param('id') id: string) {
     return this.projectsService.findOne(id);
   }
@@ -83,6 +105,9 @@ export class ProjectsController {
   @ApiOkResponse({
     description: 'The project has been successfully updated.',
   })
+  @ApiParam({ name: 'id', example: '65f34e7e0a2b3c4d5e6f7890' })
+  @ApiBadRequestResponse({ description: 'Validation error.' })
+  @ApiNotFoundResponse({ description: 'Project not found.' })
   update(@Param('id') id: string, @Body() updateProjectDto: CreateProjectDto) {
     return this.projectsService.update(id, updateProjectDto);
   }
@@ -92,6 +117,8 @@ export class ProjectsController {
   @ApiOkResponse({
     description: 'The project has been successfully deleted.',
   })
+  @ApiParam({ name: 'id', example: '65f34e7e0a2b3c4d5e6f7890' })
+  @ApiNotFoundResponse({ description: 'Project not found.' })
   remove(@Param('id') id: string) {
     return this.projectsService.remove(id);
   }
@@ -101,6 +128,8 @@ export class ProjectsController {
   @ApiOkResponse({
     description: 'The project has been successfully published.',
   })
+  @ApiParam({ name: 'id', example: '65f34e7e0a2b3c4d5e6f7890' })
+  @ApiNotFoundResponse({ description: 'Project not found.' })
   publish(@Param('id') id: string) {
     return this.projectsService.publish(id);
   }

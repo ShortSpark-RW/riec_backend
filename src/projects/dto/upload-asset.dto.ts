@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
+import { ProjectDocumentType } from '@prisma/client';
 
 export class UploadAssetDto {
   @IsString()
@@ -13,7 +14,7 @@ export class UploadAssetDto {
 
   @IsString()
   @ApiProperty({ example: 'PRESENTATION' })
-  documentType: string;
+  documentType: ProjectDocumentType;
 
   @IsOptional()
   @IsString()

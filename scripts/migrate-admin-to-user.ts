@@ -5,27 +5,16 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import * as bcrypt from 'bcrypt';
 
 async function main() {
   const prisma = new PrismaClient();
   try {
-    const admins = await prisma.adminUser.findMany();
-    for (const a of admins) {
-      const existing = await (prisma as any).user.findUnique({
-        where: { email: a.email },
-      });
-      if (existing) {
-        console.log(`User exists for ${a.email}, skipping`);
-        continue;
-      }
-      await (prisma as any).user.create({
-        data: { email: a.email, passwordHash: a.passwordHash, role: 'ADMIN' },
-      });
-      console.log(`Migrated admin ${a.email}`);
-    }
-    console.log('Migration complete');
+    console.log(
+      'AdminUser model has been removed from the Prisma schema. If you still have an old AdminUser collection in Mongo, please migrate it manually to the User collection with role=ADMIN before dropping it.',
+    );
+    console.log(
+      'This script is now a no-op placeholder to avoid compile-time errors after the unification.',
+    );
   } catch (err) {
     console.error('Migration failed', err);
     process.exitCode = 1;

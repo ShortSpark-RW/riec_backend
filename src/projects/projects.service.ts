@@ -70,34 +70,66 @@ export class ProjectsService {
   /* -------------------------------------------------------------------------- */
 
   async create(dto: CreateProjectDto, ownerId?: string): Promise<Project> {
-    const data: any = { ...dto };
+    const { serviceSlug, ...rest } = dto as any;
+    const data: any = { ...rest };
+
+    if (serviceSlug) {
+      data.service = {
+        connect: { slug: serviceSlug },
+      };
+    }
+
     if (ownerId) data.ownerId = ownerId;
 
     return this.prisma.project.create({ data });
   }
 
   async list(
-    filters: { service?: string; location?: string; featured?: boolean },
+    filters: {
+      service?: string;
+      location?: string;
+      featured?: boolean;
+      type?: string;
+      category?: string;
+    },
     page = 1,
     limit = 20,
   ): Promise<PaginatedResponse<Project>> {
     const where: any = {};
-
-    if (filters.service) where.services = { has: filters.service };
     if (filters.location) where.location = filters.location;
     if (filters.featured !== undefined) where.featured = filters.featured;
+    if (filters.type) where.type = filters.type;
+    if (filters.category) where.category = filters.category;
 
     const skip = (page - 1) * limit;
 
+    // Start from the base filters and optionally constrain by service
+    let baseWhere: any = { ...where };
+    if (filters.service) {
+      const service = await this.prisma.service.findFirst({
+        where: { name: filters.service },
+      });
+
+      if (!service) {
+        return {
+          data: [],
+          total: 0,
+          meta: this.getPaginationMetadata(0, page, limit),
+        };
+      }
+
+      baseWhere = { ...baseWhere, serviceId: service.id };
+    }
+
     const [items, total] = await Promise.all([
       this.prisma.project.findMany({
-        where,
+        where: baseWhere,
         include: { images: true, pricingTiers: true },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.project.count({ where }),
+      this.prisma.project.count({ where: baseWhere }),
     ]);
 
     return {
@@ -143,9 +175,18 @@ export class ProjectsService {
   async update(id: string, dto: Partial<CreateProjectDto>): Promise<Project> {
     await this.findOne(id);
 
+    const { serviceSlug, ...rest } = dto as any;
+    const data: any = { ...rest };
+
+    if (serviceSlug) {
+      data.service = {
+        connect: { slug: serviceSlug },
+      };
+    }
+
     return this.prisma.project.update({
       where: { id },
-      data: dto,
+      data,
     });
   }
 
