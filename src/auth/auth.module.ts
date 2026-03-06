@@ -12,16 +12,10 @@ import { RolesGuard } from './roles.guard';
   imports: [
     PassportModule,
     JwtModule.registerAsync({
-      useFactory: () => {
-        const expiresIn =
-          process.env.JWT_EXPIRES_IN !== undefined
-            ? Number(process.env.JWT_EXPIRES_IN)
-            : '1d';
-        return {
-          secret: process.env.JWT_SECRET,
-          signOptions: { expiresIn },
-        };
-      },
+      useFactory: () => ({
+        secret: process.env.JWT_SECRET,
+        signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN || '1d') as any },
+      }),
     }),
   ],
   controllers: [AuthController],

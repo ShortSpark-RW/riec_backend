@@ -1,45 +1,28 @@
-import {
-  IsArray,
-  IsBoolean,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ProjectDocumentType } from '@prisma/client';
 
 export class CreateProjectDto {
+  @IsNotEmpty()
   @IsString()
-  @MaxLength(200)
-  @ApiProperty({ example: 'New Project', maxLength: 200 })
   title: string;
 
+  @IsNotEmpty()
   @IsString()
-  @MaxLength(200)
-  @ApiProperty({ example: 'new-project', maxLength: 200 })
-  slug: string;
-
-  @IsString()
-  @ApiProperty({ example: 'A concise description of the project' })
   description: string;
 
+  @IsOptional()
+  @IsEnum(ProjectDocumentType)
+  documentType?: ProjectDocumentType;
+
+  @IsOptional()
   @IsString()
-  @ApiProperty({ example: 'Lagos, Nigeria' })
-  location: string;
-
-  @IsArray()
-  @IsString({ each: true })
-  @ApiProperty({ example: ['architecture', 'interiors'] })
-  services: string[];
+  imageUrl?: string;
 
   @IsOptional()
-  @IsBoolean()
-  @ApiPropertyOptional({ example: true })
-  featured?: boolean;
+  @IsString()
+  status?: string;
 
   @IsOptional()
-  @IsBoolean()
-  @ApiPropertyOptional({ example: false })
-  purchasable?: boolean;
+  @IsString()
+  publishedAt?: Date;
 }
-
-

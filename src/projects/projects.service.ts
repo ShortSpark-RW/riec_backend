@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-// (Removed old duplicate lightweight ProjectsService implementation.)
+
 import {
   Injectable,
   NotFoundException,
   ForbiddenException,
-  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -16,41 +15,46 @@ import { S3Service } from '../s3/s3.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UploadAssetDto } from './dto/upload-asset.dto';
 import { Role } from '../auth/role.enum';
+import { Project } from '@prisma/client';
+import { PaginatedResponse } from './dto/paginated-response.dto';
 
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
 
   constructor(
-    private prisma: PrismaService,
-    private s3Service: S3Service,
+    private readonly prisma: PrismaService,
+    private readonly s3Service: S3Service,
   ) {}
+
+  /* -------------------------------------------------------------------------- */
+  /*                                HELPERS                                     */
+  /* -------------------------------------------------------------------------- */
 
   private getIncludeObject(includeParams: string[]) {
     const defaultInclude = {
       owner: {
-        select: {
-          id: true,
-          email: true,
-          role: true,
-        },
+        select: { id: true, email: true, role: true },
       },
       uploadedBy: {
         select: { id: true, email: true, role: true },
       },
     };
 
-    if (!includeParams || includeParams.length === 0) return defaultInclude;
+    if (!includeParams?.length) return defaultInclude;
 
     const include: any = {};
     if (includeParams.includes('owner')) include.owner = defaultInclude.owner;
-    if (includeParams.includes('uploadedBy'))
+    if (includeParams.includes('uploadedBy')) {
       include.uploadedBy = defaultInclude.uploadedBy;
+    }
+
     return include;
   }
 
   private getPaginationMetadata(total: number, page: number, limit: number) {
     const totalPages = Math.ceil(total / limit);
+
     return {
       total,
       page,
@@ -61,13 +65,14 @@ export class ProjectsService {
     };
   }
 
-  private toBoolean(value: any): boolean {
-    return value === 'true' || value === true;
-  }
+  /* -------------------------------------------------------------------------- */
+  /*                                  PROJECTS                                  */
+  /* -------------------------------------------------------------------------- */
 
-  async create(dto: CreateProjectDto, ownerId?: string) {
+  async create(dto: CreateProjectDto, ownerId?: string): Promise<Project> {
     const data: any = { ...dto };
     if (ownerId) data.ownerId = ownerId;
+
     return this.prisma.project.create({ data });
   }
 
@@ -75,8 +80,9 @@ export class ProjectsService {
     filters: { service?: string; location?: string; featured?: boolean },
     page = 1,
     limit = 20,
-  ) {
+  ): Promise<PaginatedResponse<Project>> {
     const where: any = {};
+
     if (filters.service) where.services = { has: filters.service };
     if (filters.location) where.location = filters.location;
     if (filters.featured !== undefined) where.featured = filters.featured;
@@ -101,8 +107,8 @@ export class ProjectsService {
     };
   }
 
-  async getBySlug(slug: string) {
-    const project = await (this.prisma as any).project.findUnique({
+  async getBySlug(slug: string): Promise<Project> {
+    const project = await this.prisma.project.findUnique({
       where: { slug },
       include: {
         images: true,
@@ -112,11 +118,57 @@ export class ProjectsService {
             uploadedBy: { select: { id: true, email: true, role: true } },
           },
         },
-      } as any,
+      },
     });
-    if (!project) throw new NotFoundException('Project not found');
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
     return project;
   }
+
+  async findOne(id: string): Promise<Project> {
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    return project;
+  }
+
+  async update(id: string, dto: Partial<CreateProjectDto>): Promise<Project> {
+    await this.findOne(id);
+
+    return this.prisma.project.update({
+      where: { id },
+      data: dto,
+    });
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.findOne(id);
+
+    await this.prisma.project.delete({
+      where: { id },
+    });
+  }
+
+  async publish(id: string): Promise<Project> {
+    await this.findOne(id);
+
+    return this.prisma.project.update({
+      where: { id },
+      data: { isPublished: true, publishedAt: new Date() },
+    });
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                                  ASSETS                                    */
+  /* -------------------------------------------------------------------------- */
 
   async generateUploadUrl(generateFor: {
     fileName: string;
@@ -126,64 +178,61 @@ export class ProjectsService {
     const s3Key = this.s3Service.generateUniqueKey(
       generateFor.fileName,
       'projects',
-      generateFor.category || 'assets',
+      generateFor.category ?? 'assets',
     );
-    const presigned = await this.s3Service.generatePresignedUploadUrl(
+
+    const uploadUrl = await this.s3Service.generatePresignedUploadUrl(
       s3Key,
       generateFor.mimeType,
     );
-    return { uploadUrl: presigned, s3Key };
+
+    return { uploadUrl, s3Key };
   }
 
   async uploadAsset(file: any, dto: UploadAssetDto, user: any) {
-    const start = Date.now();
     this.logger.log('[UPLOAD] Starting asset upload', {
       file: file.originalname,
       user: user?.userId || user?.sub,
     });
 
-    // verify project exists
-    const project = await (this.prisma as any).project.findUnique({
+    const project = await this.prisma.project.findUnique({
       where: { id: dto.projectId },
     });
-    if (!project) throw new NotFoundException('Project not found');
 
-    // permission check: ADMIN can always upload
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
     if (user.role !== Role.ADMIN) {
-      // COMPANY_WORKER must be assigned to project - check ProjectAssignment model
-      const assignment = await (this.prisma as any).projectAssignment.findFirst(
-        {
-          where: { projectId: dto.projectId, userId: user.userId || user.sub },
-        },
-      );
-      if (!assignment) {
-        this.logger.warn('Upload permission denied', {
-          user: user.userId || user.sub,
+      const assignment = await this.prisma.projectAssignment.findFirst({
+        where: {
           projectId: dto.projectId,
-        });
+          userId: user.userId || user.sub,
+        },
+      });
+
+      if (!assignment) {
         throw new ForbiddenException(
           'You do not have permission to upload assets to this project',
         );
       }
     }
 
-    // upload to s3
-    const folder = `projects/${dto.projectId}`;
-    const key = `${folder}/${Date.now()}_${file.originalname}`;
+    const key = `projects/${dto.projectId}/${Date.now()}_${file.originalname}`;
+
     const uploaded = await this.s3Service.uploadFile(
       file.buffer,
       key,
       file.mimetype,
     );
-    const s3Key = uploaded.key || key;
 
-    const created = await (this.prisma as any).projectAsset.create({
+    return this.prisma.projectAsset.create({
       data: {
         projectId: dto.projectId,
         tierId: dto.tierId,
         documentType: dto.documentType,
         version: dto.version,
-        s3Key,
+        s3Key: uploaded.key ?? key,
         filename: file.originalname,
         fileType: file.mimetype,
         size: file.size,
@@ -192,16 +241,7 @@ export class ProjectsService {
       include: {
         uploadedBy: { select: { id: true, email: true, role: true } },
       },
-    } as any);
-
-    const totalTime = ((Date.now() - start) / 1000).toFixed(2);
-    this.logger.log('[UPLOAD] Asset uploaded', {
-      id: created.id,
-      s3Key,
-      totalTime,
     });
-
-    return created;
   }
 
   async listAssets(
@@ -209,19 +249,18 @@ export class ProjectsService {
     page = 1,
     limit = 20,
     includeParams: string[] = [],
-  ) {
-    const where: any = { projectId };
+  ): Promise<PaginatedResponse<any>> {
     const skip = (page - 1) * limit;
 
     const [assets, total] = await Promise.all([
-      (this.prisma as any).projectAsset.findMany({
-        where,
+      this.prisma.projectAsset.findMany({
+        where: { projectId },
         include: this.getIncludeObject(includeParams),
-        orderBy: { id: 'desc' },
+        orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),
-      (this.prisma as any).projectAsset.count({ where }),
+      this.prisma.projectAsset.count({ where: { projectId } }),
     ]);
 
     return {
@@ -230,6 +269,4 @@ export class ProjectsService {
       meta: this.getPaginationMetadata(total, page, limit),
     };
   }
-
-  // Additional methods (download URL, move, delete) would follow the documented patterns and checks
 }
