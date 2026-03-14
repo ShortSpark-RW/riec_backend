@@ -95,13 +95,16 @@ export class ProjectsService {
     page = 1,
     limit = 20,
   ): Promise<PaginatedResponse<Project>> {
+    const pageNumber = Number(page) || 1;
+    const limitNumber = Number(limit) || 20;
+
     const where: any = {};
     if (filters.location) where.location = filters.location;
     if (filters.featured !== undefined) where.featured = filters.featured;
     if (filters.type) where.type = filters.type;
     if (filters.category) where.category = filters.category;
 
-    const skip = (page - 1) * limit;
+    const skip = (pageNumber - 1) * limitNumber;
 
     // Start from the base filters and optionally constrain by service
     let baseWhere: any = { ...where };
@@ -114,7 +117,7 @@ export class ProjectsService {
         return {
           data: [],
           total: 0,
-          meta: this.getPaginationMetadata(0, page, limit),
+          meta: this.getPaginationMetadata(0, pageNumber, limitNumber),
         };
       }
 
@@ -127,7 +130,7 @@ export class ProjectsService {
         include: { images: true, pricingTiers: true },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: limitNumber,
       }),
       this.prisma.project.count({ where: baseWhere }),
     ]);
@@ -135,7 +138,7 @@ export class ProjectsService {
     return {
       data: items,
       total,
-      meta: this.getPaginationMetadata(total, page, limit),
+      meta: this.getPaginationMetadata(total, pageNumber, limitNumber),
     };
   }
 

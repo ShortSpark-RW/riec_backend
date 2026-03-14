@@ -19,8 +19,10 @@ export class PaymentsService {
     email: string;
     fullName: string;
   }) {
+    // Allow either a Mongo ObjectId or a project slug to be passed as projectId
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(input.projectId);
     const project = await this.prisma.project.findUnique({
-      where: { id: input.projectId },
+      where: isObjectId ? { id: input.projectId } : { slug: input.projectId },
       include: { pricingTiers: true },
     });
     if (!project || !project.purchasable) {

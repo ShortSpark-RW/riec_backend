@@ -50,5 +50,3 @@ export class CareersController {
     return this.careersService.getBySlug(slug);
   }
 }
-
-

@@ -1,5 +1,10 @@
 import 'dotenv/config';
-import { PrismaClient, ProjectType, ProjectCategory, Role } from '@prisma/client';
+import {
+  PrismaClient,
+  ProjectType,
+  ProjectCategory,
+  Role,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -34,7 +39,8 @@ async function main() {
     {
       // Service 01 – Land Surveying
       name: 'Land Surveying',
-      shortDescription: 'Advanced geodetic measurements for precise topographical data.',
+      shortDescription:
+        'Advanced geodetic measurements for precise topographical data.',
       detailedDescription:
         'Advanced geodetic measurements using RTK-GPS and robotic total stations for precise topographical data.',
       order: 1,
@@ -156,8 +162,7 @@ async function main() {
       mainTasks: [
         {
           title: 'Space Planning',
-          description:
-            'Optimize layouts for functionality and aesthetics.',
+          description: 'Optimize layouts for functionality and aesthetics.',
         },
         {
           title: 'Custom Design',
@@ -172,8 +177,7 @@ async function main() {
     {
       // Service 06 – House Design
       name: 'House Design',
-      shortDescription:
-        'End-to-end architectural solutions for modern living.',
+      shortDescription: 'End-to-end architectural solutions for modern living.',
       detailedDescription:
         'End-to-end architectural solutions and project management from conceptualization to key handover.',
       order: 6,
@@ -228,8 +232,7 @@ async function main() {
     {
       // Service 08 – Property Valuation
       name: 'Property Valuation',
-      shortDescription:
-        'Professional valuation for real estate assets.',
+      shortDescription: 'Professional valuation for real estate assets.',
       detailedDescription:
         'Professional market appraisal and financial assessment for real estate assets and infrastructure.',
       order: 8,
@@ -245,8 +248,7 @@ async function main() {
         },
         {
           title: 'Investment Advice',
-          description:
-            'Expert guidance for real estate decisions.',
+          description: 'Expert guidance for real estate decisions.',
         },
         {
           title: 'Financial Reports',
@@ -285,7 +287,8 @@ async function main() {
     {
       title: 'Office Complex Phase 1',
       slug: 'office-complex-phase-1',
-      description: 'Multi-story commercial office building with modern amenities.',
+      description:
+        'Multi-story commercial office building with modern amenities.',
       location: 'Abuja, Nigeria',
       type: ProjectType.COMPLETED,
       category: ProjectCategory.COMMERCIAL,
@@ -298,7 +301,8 @@ async function main() {
     {
       title: 'Industrial Warehouse',
       slug: 'industrial-warehouse',
-      description: 'Large-scale industrial warehouse with loading docks and storage solutions.',
+      description:
+        'Large-scale industrial warehouse with loading docks and storage solutions.',
       location: 'Port Harcourt, Nigeria',
       type: ProjectType.COMPLETED,
       category: ProjectCategory.INDUSTRIAL,
@@ -324,7 +328,8 @@ async function main() {
     {
       title: 'Shopping Mall Redevelopment',
       slug: 'shopping-mall-redevelopment',
-      description: 'Redevelopment plan for existing shopping mall with new retail spaces.',
+      description:
+        'Redevelopment plan for existing shopping mall with new retail spaces.',
       location: 'Lagos, Nigeria',
       type: ProjectType.PLAN_TO_BUY,
       category: ProjectCategory.COMMERCIAL,
@@ -337,7 +342,8 @@ async function main() {
     {
       title: 'Manufacturing Plant',
       slug: 'manufacturing-plant',
-      description: 'New manufacturing facility with production and administrative areas.',
+      description:
+        'New manufacturing facility with production and administrative areas.',
       location: 'Ogun State, Nigeria',
       type: ProjectType.PLAN_TO_BUY,
       category: ProjectCategory.INDUSTRIAL,
@@ -349,7 +355,9 @@ async function main() {
     },
   ];
 
-  const allServices = await prisma.service.findMany({ orderBy: { order: 'asc' } });
+  const allServices = await prisma.service.findMany({
+    orderBy: { order: 'asc' },
+  });
   for (const [index, project] of projectsData.entries()) {
     const service = allServices[index % allServices.length];
     await prisma.project.upsert({
@@ -388,7 +396,8 @@ async function main() {
       location: 'Abuja, Nigeria',
       employmentType: 'Full-time',
       department: 'Operations',
-      description: 'Join our team as a Project Manager to oversee construction projects.',
+      description:
+        'Join our team as a Project Manager to oversee construction projects.',
       requirements:
         'BSc in Civil Engineering or Construction Management, 5+ years PM experience, PMP certification preferred.',
       responsibilities:
@@ -401,7 +410,8 @@ async function main() {
       location: 'Lagos, Nigeria',
       employmentType: 'Full-time',
       department: 'Design',
-      description: 'Entry-level position for a motivated architect to grow with our design team.',
+      description:
+        'Entry-level position for a motivated architect to grow with our design team.',
       requirements:
         'BArch degree, 1-2 years experience, proficiency in AutoCAD and Revit.',
       responsibilities:
@@ -414,7 +424,8 @@ async function main() {
       location: 'Remote',
       employmentType: 'Contract',
       department: 'Cost Management',
-      description: 'Experienced Quantity Surveyor for cost estimation and tender preparation.',
+      description:
+        'Experienced Quantity Surveyor for cost estimation and tender preparation.',
       requirements:
         'BSc in Quantity Surveying or related field, 4+ years experience, RICS membership preferred.',
       responsibilities:
