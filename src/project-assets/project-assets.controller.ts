@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import {
   Controller, Get, Post, Put, Delete, Param, Body, Query,
   UploadedFiles, UseInterceptors, Req, UseGuards,
@@ -12,7 +13,7 @@ import { CreateAssetDto } from './dto/create-asset.dto';
 import { ProjectDocumentType } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@ApiTags('project-assets')
+@ApiTags('Project Assets (Project related Documents) Endpoints')
 @Controller('projects/:projectId/assets')
 export class ProjectAssetsController {
   constructor(private readonly service: ProjectAssetsService) {}

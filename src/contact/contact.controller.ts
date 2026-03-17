@@ -49,7 +49,7 @@ class ContactDto {
   message: string;
 }
 
-@ApiTags('contact')
+@ApiTags('Contact Us Endpoints')
 @Controller('contact')
 export class ContactController {
   constructor(private readonly prisma: PrismaService) {}
@@ -102,5 +102,3 @@ export class ContactController {
     });
   }
 }
-
-

@@ -1,17 +1,32 @@
 import {
-  Controller, Get, Post, Put, Delete, Param, Body,
-  UploadedFiles, UseInterceptors, UseGuards,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  UploadedFiles,
+  UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
-  ApiTags, ApiOperation, ApiParam, ApiConsumes, ApiBody, ApiBearerAuth,
-  ApiCreatedResponse, ApiOkResponse, ApiNotFoundResponse,
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiConsumes,
+  ApiBody,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { ServiceImagesService } from './service-images.service';
 import { UpdateServiceImageDto } from './dto/update-service-image.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@ApiTags('service-images')
+@ApiTags('Service Images Endpoints')
 @Controller('services/:serviceId/images')
 export class ServiceImagesController {
   constructor(private readonly service: ServiceImagesService) {}
@@ -40,7 +55,9 @@ export class ServiceImagesController {
     @Body('captions') captions?: string | string[],
   ) {
     const captionsArr = captions
-      ? Array.isArray(captions) ? captions : [captions]
+      ? Array.isArray(captions)
+        ? captions
+        : [captions]
       : undefined;
     return this.service.upload(serviceId, files, captionsArr);
   }
@@ -59,7 +76,12 @@ export class ServiceImagesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Reorder service images' })
   @ApiParam({ name: 'serviceId', example: '65f34e7e0a2b3c4d5e6f7890' })
-  @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } } })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { ids: { type: 'array', items: { type: 'string' } } },
+    },
+  })
   @ApiOkResponse({ description: 'Images reordered.' })
   reorder(@Param('serviceId') serviceId: string, @Body('ids') ids: string[]) {
     return this.service.reorder(serviceId, ids);
@@ -89,7 +111,10 @@ export class ServiceImagesController {
   @ApiParam({ name: 'imageId', example: '65f34e7e0a2b3c4d5e6f7891' })
   @ApiOkResponse({ description: 'Image deleted.' })
   @ApiNotFoundResponse({ description: 'Image not found.' })
-  remove(@Param('serviceId') serviceId: string, @Param('imageId') imageId: string) {
+  remove(
+    @Param('serviceId') serviceId: string,
+    @Param('imageId') imageId: string,
+  ) {
     return this.service.remove(serviceId, imageId);
   }
 }

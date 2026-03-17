@@ -1,5 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ProjectDocumentType } from '@prisma/client';
 
 export class CreateAssetDto {
@@ -8,8 +12,9 @@ export class CreateAssetDto {
   documentType: ProjectDocumentType;
 
   @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({ example: 'tierId123' })
+  @IsMongoId()
+  @Transform(({ value }) => (value?.trim() ? value.trim() : undefined))
+  @ApiPropertyOptional({ example: '65f34e7e0a2b3c4d5e6f7892' })
   tierId?: string;
 
   @IsOptional()

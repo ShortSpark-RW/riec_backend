@@ -1,17 +1,32 @@
 import {
-  Controller, Get, Post, Put, Delete, Param, Body,
-  UploadedFiles, UseInterceptors, UseGuards,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  UploadedFiles,
+  UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
-  ApiTags, ApiOperation, ApiParam, ApiConsumes, ApiBody,
-  ApiCreatedResponse, ApiOkResponse, ApiNotFoundResponse, ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiConsumes,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiNotFoundResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ProjectImagesService } from './project-images.service';
 import { UpdateImageDto } from './dto/update-image.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@ApiTags('project-images')
+@ApiTags('Project Images (Project related Documents) Endpoints')
 @Controller('projects/:projectId/images')
 export class ProjectImagesController {
   constructor(private readonly service: ProjectImagesService) {}
@@ -39,7 +54,9 @@ export class ProjectImagesController {
     @Body('captions') captions?: string | string[],
   ) {
     const captionsArr = captions
-      ? Array.isArray(captions) ? captions : [captions]
+      ? Array.isArray(captions)
+        ? captions
+        : [captions]
       : undefined;
     return this.service.upload(projectId, files, captionsArr);
   }
@@ -57,7 +74,12 @@ export class ProjectImagesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Reorder project images' })
   @ApiParam({ name: 'projectId', example: '65f34e7e0a2b3c4d5e6f7890' })
-  @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } } })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { ids: { type: 'array', items: { type: 'string' } } },
+    },
+  })
   @ApiOkResponse({ description: 'Images reordered.' })
   reorder(@Param('projectId') projectId: string, @Body('ids') ids: string[]) {
     return this.service.reorder(projectId, ids);
@@ -87,7 +109,10 @@ export class ProjectImagesController {
   @ApiParam({ name: 'imageId', example: '65f34e7e0a2b3c4d5e6f7891' })
   @ApiOkResponse({ description: 'Image deleted.' })
   @ApiNotFoundResponse({ description: 'Image not found.' })
-  remove(@Param('projectId') projectId: string, @Param('imageId') imageId: string) {
+  remove(
+    @Param('projectId') projectId: string,
+    @Param('imageId') imageId: string,
+  ) {
     return this.service.remove(projectId, imageId);
   }
 }

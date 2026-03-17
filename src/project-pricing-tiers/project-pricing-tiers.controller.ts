@@ -1,13 +1,29 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import {
-  ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBearerAuth,
-  ApiCreatedResponse, ApiOkResponse, ApiNotFoundResponse,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { ProjectPricingTiersService } from './project-pricing-tiers.service';
 import { CreatePriceTierDto } from './dto/create-price-tier.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@ApiTags('project-pricing-tiers')
+@ApiTags('Project Pricing Tiers Endpoints')
 @Controller('projects/:projectId/tiers')
 export class ProjectPricingTiersController {
   constructor(private readonly service: ProjectPricingTiersService) {}
@@ -18,7 +34,10 @@ export class ProjectPricingTiersController {
   @ApiOperation({ summary: 'Create a pricing tier for a project' })
   @ApiParam({ name: 'projectId', example: '65f34e7e0a2b3c4d5e6f7890' })
   @ApiCreatedResponse({ description: 'Pricing tier created.' })
-  create(@Param('projectId') projectId: string, @Body() dto: CreatePriceTierDto) {
+  create(
+    @Param('projectId') projectId: string,
+    @Body() dto: CreatePriceTierDto,
+  ) {
     return this.service.create(projectId, dto);
   }
 
@@ -26,8 +45,13 @@ export class ProjectPricingTiersController {
   @ApiOperation({ summary: 'List pricing tiers for a project' })
   @ApiParam({ name: 'projectId', example: '65f34e7e0a2b3c4d5e6f7890' })
   @ApiQuery({ name: 'onlyActive', required: false, description: 'true/false' })
-  @ApiOkResponse({ description: 'List of pricing tiers with their linked assets.' })
-  list(@Param('projectId') projectId: string, @Query('onlyActive') onlyActive?: string) {
+  @ApiOkResponse({
+    description: 'List of pricing tiers with their linked assets.',
+  })
+  list(
+    @Param('projectId') projectId: string,
+    @Query('onlyActive') onlyActive?: string,
+  ) {
     return this.service.list(projectId, onlyActive === 'true');
   }
 
@@ -37,7 +61,10 @@ export class ProjectPricingTiersController {
   @ApiParam({ name: 'tierId', example: '65f34e7e0a2b3c4d5e6f7892' })
   @ApiOkResponse({ description: 'Pricing tier details.' })
   @ApiNotFoundResponse({ description: 'Pricing tier not found.' })
-  findOne(@Param('projectId') projectId: string, @Param('tierId') tierId: string) {
+  findOne(
+    @Param('projectId') projectId: string,
+    @Param('tierId') tierId: string,
+  ) {
     return this.service.findOne(projectId, tierId);
   }
 
@@ -65,7 +92,10 @@ export class ProjectPricingTiersController {
   @ApiParam({ name: 'tierId', example: '65f34e7e0a2b3c4d5e6f7892' })
   @ApiOkResponse({ description: 'Pricing tier deleted.' })
   @ApiNotFoundResponse({ description: 'Pricing tier not found.' })
-  remove(@Param('projectId') projectId: string, @Param('tierId') tierId: string) {
+  remove(
+    @Param('projectId') projectId: string,
+    @Param('tierId') tierId: string,
+  ) {
     return this.service.remove(projectId, tierId);
   }
 }

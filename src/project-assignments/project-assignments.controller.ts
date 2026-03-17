@@ -1,13 +1,28 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import {
-  ApiTags, ApiOperation, ApiParam, ApiBearerAuth,
-  ApiCreatedResponse, ApiOkResponse, ApiNotFoundResponse, ApiConflictResponse,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiNotFoundResponse,
+  ApiConflictResponse,
 } from '@nestjs/swagger';
 import { ProjectAssignmentsService } from './project-assignments.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@ApiTags('project-assignments')
+@ApiTags('Project Assignment (Project and Staff relation) Endpoints')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 @Controller('projects/:projectId/assignments')
@@ -20,7 +35,10 @@ export class ProjectAssignmentsController {
   @ApiCreatedResponse({ description: 'User assigned.' })
   @ApiNotFoundResponse({ description: 'Project or user not found.' })
   @ApiConflictResponse({ description: 'User already assigned.' })
-  assign(@Param('projectId') projectId: string, @Body() dto: CreateAssignmentDto) {
+  assign(
+    @Param('projectId') projectId: string,
+    @Body() dto: CreateAssignmentDto,
+  ) {
     return this.service.assign(projectId, dto);
   }
 
@@ -52,7 +70,10 @@ export class ProjectAssignmentsController {
   @ApiParam({ name: 'assignmentId', example: '65f34e7e0a2b3c4d5e6f7894' })
   @ApiOkResponse({ description: 'Assignment removed.' })
   @ApiNotFoundResponse({ description: 'Assignment not found.' })
-  unassign(@Param('projectId') projectId: string, @Param('assignmentId') assignmentId: string) {
+  unassign(
+    @Param('projectId') projectId: string,
+    @Param('assignmentId') assignmentId: string,
+  ) {
     return this.service.unassign(projectId, assignmentId);
   }
 }

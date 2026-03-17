@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 
@@ -17,7 +21,8 @@ export class ProjectAssignmentsService {
     const existing = await this.prisma.projectAssignment.findFirst({
       where: { projectId, userId: dto.userId },
     });
-    if (existing) throw new ConflictException('User already assigned to this project');
+    if (existing)
+      throw new ConflictException('User already assigned to this project');
 
     return this.prisma.projectAssignment.create({
       data: { projectId, userId: dto.userId, role: dto.role },
@@ -26,7 +31,9 @@ export class ProjectAssignmentsService {
   }
 
   async list(projectId: string) {
-    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
     if (!project) throw new NotFoundException('Project not found');
 
     return this.prisma.projectAssignment.findMany({

@@ -11,7 +11,7 @@ import { CareersService } from './careers.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { getPagination } from '../common/utils/pagination.util';
 
-@ApiTags('careers')
+@ApiTags('Careers Endpoints')
 @Controller('careers')
 export class CareersController {
   constructor(private readonly careersService: CareersService) {}

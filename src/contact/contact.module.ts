@@ -5,5 +5,3 @@ import { ContactController } from './contact.controller';
   controllers: [ContactController],
 })
 export class ContactModule {}
-
-

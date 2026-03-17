@@ -1,14 +1,29 @@
-import { Controller, Get, Post, Put, Param, Body, Query, UseGuards } from '@nestjs/common';
 import {
-  ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBearerAuth,
-  ApiCreatedResponse, ApiOkResponse, ApiNotFoundResponse,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { ProjectPurchasesService } from './project-purchases.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { PurchaseStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@ApiTags('project-purchases')
+@ApiTags('Project Purchases Endpoints')
 @Controller('projects/:projectId/purchases')
 export class ProjectPurchasesController {
   constructor(private readonly service: ProjectPurchasesService) {}
@@ -18,7 +33,10 @@ export class ProjectPurchasesController {
   @ApiParam({ name: 'projectId', example: '65f34e7e0a2b3c4d5e6f7890' })
   @ApiCreatedResponse({ description: 'Purchase recorded.' })
   @ApiNotFoundResponse({ description: 'Project or tier not found.' })
-  create(@Param('projectId') projectId: string, @Body() dto: CreatePurchaseDto) {
+  create(
+    @Param('projectId') projectId: string,
+    @Body() dto: CreatePurchaseDto,
+  ) {
     return this.service.create(projectId, dto);
   }
 
@@ -46,7 +64,10 @@ export class ProjectPurchasesController {
   @ApiParam({ name: 'purchaseId', example: '65f34e7e0a2b3c4d5e6f7895' })
   @ApiOkResponse({ description: 'Purchase details.' })
   @ApiNotFoundResponse({ description: 'Purchase not found.' })
-  findOne(@Param('projectId') projectId: string, @Param('purchaseId') purchaseId: string) {
+  findOne(
+    @Param('projectId') projectId: string,
+    @Param('purchaseId') purchaseId: string,
+  ) {
     return this.service.findOne(projectId, purchaseId);
   }
 
@@ -67,21 +88,31 @@ export class ProjectPurchasesController {
   }
 
   @Get(':purchaseId/downloads')
-  @ApiOperation({ summary: 'Get signed download URLs for assets in a completed purchase' })
+  @ApiOperation({
+    summary: 'Get signed download URLs for assets in a completed purchase',
+  })
   @ApiParam({ name: 'projectId', example: '65f34e7e0a2b3c4d5e6f7890' })
   @ApiParam({ name: 'purchaseId', example: '65f34e7e0a2b3c4d5e6f7895' })
   @ApiOkResponse({ description: 'Signed download URLs for purchased assets.' })
   @ApiNotFoundResponse({ description: 'Purchase not found.' })
-  getDownloadLinks(@Param('projectId') projectId: string, @Param('purchaseId') purchaseId: string) {
+  getDownloadLinks(
+    @Param('projectId') projectId: string,
+    @Param('purchaseId') purchaseId: string,
+  ) {
     return this.service.getDownloadLinks(projectId, purchaseId);
   }
 
   @Post(':purchaseId/download-token')
-  @ApiOperation({ summary: 'Generate a one-time download token for a completed purchase' })
+  @ApiOperation({
+    summary: 'Generate a one-time download token for a completed purchase',
+  })
   @ApiParam({ name: 'projectId', example: '65f34e7e0a2b3c4d5e6f7890' })
   @ApiParam({ name: 'purchaseId', example: '65f34e7e0a2b3c4d5e6f7895' })
   @ApiOkResponse({ description: 'Download token generated.' })
-  generateDownloadToken(@Param('projectId') projectId: string, @Param('purchaseId') purchaseId: string) {
+  generateDownloadToken(
+    @Param('projectId') projectId: string,
+    @Param('purchaseId') purchaseId: string,
+  ) {
     return this.service.generateDownloadToken(projectId, purchaseId);
   }
 }

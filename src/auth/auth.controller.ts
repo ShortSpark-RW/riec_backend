@@ -38,7 +38,7 @@ class RegisterDto {
   password: string;
 }
 
-@ApiTags('auth')
+@ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -77,5 +77,3 @@ export class AuthController {
     return this.authService.register(requesterEmail, email, password);
   }
 }
-
-

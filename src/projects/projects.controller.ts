@@ -1,14 +1,31 @@
-import { Controller, Get, Post, Body, Param, Delete, Put, Query, UseGuards } from '@nestjs/common';
 import {
-  ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBearerAuth,
-  ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+  ApiBadRequestResponse,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
 } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { ProjectCategory, ProjectType } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@ApiTags('projects')
+@ApiTags('Projects Endpoints')
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
@@ -43,7 +60,13 @@ export class ProjectsController {
     @Query('limit') limit = 20,
   ) {
     return this.projectsService.list(
-      { service, location, featured: featured === 'true' ? true : undefined, type, category },
+      {
+        service,
+        location,
+        featured: featured === 'true' ? true : undefined,
+        type,
+        category,
+      },
       page,
       limit,
     );

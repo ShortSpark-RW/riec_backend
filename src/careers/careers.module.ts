@@ -7,5 +7,3 @@ import { CareersController } from './careers.controller';
   controllers: [CareersController],
 })
 export class CareersModule {}
-
-

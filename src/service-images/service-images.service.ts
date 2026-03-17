@@ -11,30 +11,50 @@ export class ServiceImagesService {
   ) {}
 
   private async assertService(serviceId: string) {
-    const service = await this.prisma.service.findUnique({ where: { id: serviceId } });
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+    });
     if (!service) throw new NotFoundException('Service not found');
   }
 
   private async findImageOrFail(serviceId: string, imageId: string) {
-    const image = await this.prisma.serviceImage.findFirst({ where: { id: imageId, serviceId } });
+    const image = await this.prisma.serviceImage.findFirst({
+      where: { id: imageId, serviceId },
+    });
     if (!image) throw new NotFoundException('Image not found');
     return image;
   }
 
   async upload(
     serviceId: string,
-    files: { originalname: string; buffer: Buffer; mimetype: string; size: number }[],
+    files: {
+      originalname: string;
+      buffer: Buffer;
+      mimetype: string;
+      size: number;
+    }[],
     captions?: string[],
   ) {
     await this.assertService(serviceId);
-    const existing = await this.prisma.serviceImage.count({ where: { serviceId } });
+    const existing = await this.prisma.serviceImage.count({
+      where: { serviceId },
+    });
 
     return Promise.all(
       files.map(async (file, idx) => {
-        const s3Key = await this.s3.uploadFile(file, `services/${serviceId}/images`);
+        const s3Key = await this.s3.uploadFile(
+          file,
+          `services/${serviceId}/images`,
+        );
         const url = await this.s3.generateSignedUrl(s3Key);
         return this.prisma.serviceImage.create({
-          data: { serviceId, s3Key, url, caption: captions?.[idx], order: existing + idx },
+          data: {
+            serviceId,
+            s3Key,
+            url,
+            caption: captions?.[idx],
+            order: existing + idx,
+          },
         });
       }),
     );
@@ -50,7 +70,10 @@ export class ServiceImagesService {
 
   async update(serviceId: string, imageId: string, dto: UpdateServiceImageDto) {
     await this.findImageOrFail(serviceId, imageId);
-    return this.prisma.serviceImage.update({ where: { id: imageId }, data: dto });
+    return this.prisma.serviceImage.update({
+      where: { id: imageId },
+      data: dto,
+    });
   }
 
   async reorder(serviceId: string, orderedIds: string[]) {

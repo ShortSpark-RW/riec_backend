@@ -7,5 +7,3 @@ import { PaymentsController } from './payments.controller';
   controllers: [PaymentsController],
 })
 export class PaymentsModule {}
-
-

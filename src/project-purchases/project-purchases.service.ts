@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from '../s3/s3.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
@@ -16,7 +20,9 @@ export class ProjectPurchasesService {
   async create(projectId: string, dto: CreatePurchaseDto) {
     const [project, tier] = await Promise.all([
       this.prisma.project.findUnique({ where: { id: projectId } }),
-      this.prisma.projectPriceTier.findFirst({ where: { id: dto.tierId, projectId } }),
+      this.prisma.projectPriceTier.findFirst({
+        where: { id: dto.tierId, projectId },
+      }),
     ]);
     if (!project) throw new NotFoundException('Project not found');
     if (!tier) throw new NotFoundException('Pricing tier not found');
@@ -33,7 +39,9 @@ export class ProjectPurchasesService {
         status: PurchaseStatus.PENDING,
       },
       include: {
-        tier: { select: { id: true, name: true, currency: true, amount: true } },
+        tier: {
+          select: { id: true, name: true, currency: true, amount: true },
+        },
       },
     });
   }
@@ -45,7 +53,11 @@ export class ProjectPurchasesService {
     const [data, total] = await Promise.all([
       this.prisma.purchase.findMany({
         where,
-        include: { tier: { select: { id: true, name: true, currency: true, amount: true } } },
+        include: {
+          tier: {
+            select: { id: true, name: true, currency: true, amount: true },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         skip,
         take,
@@ -60,7 +72,9 @@ export class ProjectPurchasesService {
     const purchase = await this.prisma.purchase.findFirst({
       where: { id: purchaseId, projectId },
       include: {
-        tier: { select: { id: true, name: true, currency: true, amount: true } },
+        tier: {
+          select: { id: true, name: true, currency: true, amount: true },
+        },
         project: { select: { id: true, title: true, slug: true } },
       },
     });
@@ -68,16 +82,27 @@ export class ProjectPurchasesService {
     return purchase;
   }
 
-  async updateStatus(projectId: string, purchaseId: string, status: PurchaseStatus) {
-    const purchase = await this.prisma.purchase.findFirst({ where: { id: purchaseId, projectId } });
+  async updateStatus(
+    projectId: string,
+    purchaseId: string,
+    status: PurchaseStatus,
+  ) {
+    const purchase = await this.prisma.purchase.findFirst({
+      where: { id: purchaseId, projectId },
+    });
     if (!purchase) throw new NotFoundException('Purchase not found');
-    return this.prisma.purchase.update({ where: { id: purchaseId }, data: { status } });
+    return this.prisma.purchase.update({
+      where: { id: purchaseId },
+      data: { status },
+    });
   }
 
   async getDownloadLinks(projectId: string, purchaseId: string) {
     const purchase = await this.prisma.purchase.findFirst({
       where: { id: purchaseId, projectId },
-      include: { tier: { include: { assets: { where: { isDownloadable: true } } } } },
+      include: {
+        tier: { include: { assets: { where: { isDownloadable: true } } } },
+      },
     });
     if (!purchase) throw new NotFoundException('Purchase not found');
     if (purchase.status !== PurchaseStatus.SUCCESS) {
@@ -97,13 +122,18 @@ export class ProjectPurchasesService {
   }
 
   async generateDownloadToken(projectId: string, purchaseId: string) {
-    const purchase = await this.prisma.purchase.findFirst({ where: { id: purchaseId, projectId } });
+    const purchase = await this.prisma.purchase.findFirst({
+      where: { id: purchaseId, projectId },
+    });
     if (!purchase) throw new NotFoundException('Purchase not found');
     if (purchase.status !== PurchaseStatus.SUCCESS) {
       throw new ForbiddenException('Purchase has not been completed');
     }
     const token = randomBytes(32).toString('hex');
-    await this.prisma.purchase.update({ where: { id: purchaseId }, data: { downloadToken: token } });
+    await this.prisma.purchase.update({
+      where: { id: purchaseId },
+      data: { downloadToken: token },
+    });
     return { token };
   }
 }

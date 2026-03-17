@@ -29,7 +29,7 @@ class InitProjectCheckoutDto {
   fullName: string;
 }
 
-@ApiTags('payments')
+@ApiTags('Payment Endpoints')
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
@@ -54,7 +54,9 @@ export class PaymentsController {
   }
 
   @Get('downloads/:token')
-  @ApiOperation({ summary: 'Get downloadable assets for a successful purchase' })
+  @ApiOperation({
+    summary: 'Get downloadable assets for a successful purchase',
+  })
   @ApiOkResponse({
     description:
       'List of assets the customer can download, filtered by pricing tier.',
@@ -65,5 +67,3 @@ export class PaymentsController {
     return this.paymentsService.getDownloadsByToken(token);
   }
 }
-
-
