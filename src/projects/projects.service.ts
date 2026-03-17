@@ -1,86 +1,24 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { S3Service } from '../s3/s3.service';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { UploadAssetDto } from './dto/upload-asset.dto';
-import { Role } from '../auth/role.enum';
-import { Project } from '@prisma/client';
-import { PaginatedResponse } from './dto/paginated-response.dto';
+import { paginate } from '../common/utils/pagination.util';
+import { ProjectCategory, ProjectType } from '@prisma/client';
 
 @Injectable()
 export class ProjectsService {
-  private readonly logger = new Logger(ProjectsService.name);
+  constructor(private readonly prisma: PrismaService) {}
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly s3Service: S3Service,
-  ) {}
-
-  /* -------------------------------------------------------------------------- */
-  /*                                HELPERS                                     */
-  /* -------------------------------------------------------------------------- */
-
-  private getIncludeObject(includeParams: string[]) {
-    const defaultInclude = {
-      owner: {
-        select: { id: true, email: true, role: true },
-      },
-      uploadedBy: {
-        select: { id: true, email: true, role: true },
-      },
-    };
-
-    if (!includeParams?.length) return defaultInclude;
-
-    const include: any = {};
-    if (includeParams.includes('owner')) include.owner = defaultInclude.owner;
-    if (includeParams.includes('uploadedBy')) {
-      include.uploadedBy = defaultInclude.uploadedBy;
-    }
-
-    return include;
+  private async findOneOrFail(id: string) {
+    const project = await this.prisma.project.findUnique({ where: { id } });
+    if (!project) throw new NotFoundException('Project not found');
+    return project;
   }
 
-  private getPaginationMetadata(total: number, page: number, limit: number) {
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      total,
-      page,
-      limit,
-      totalPages,
-      hasNextPage: page * limit < total,
-      hasPreviousPage: page > 1,
-    };
-  }
-
-  /* -------------------------------------------------------------------------- */
-  /*                                  PROJECTS                                  */
-  /* -------------------------------------------------------------------------- */
-
-  async create(dto: CreateProjectDto, ownerId?: string): Promise<Project> {
+  async create(dto: CreateProjectDto, ownerId?: string) {
     const { serviceSlug, ...rest } = dto as any;
     const data: any = { ...rest };
-
-    if (serviceSlug) {
-      data.service = {
-        connect: { slug: serviceSlug },
-      };
-    }
-
+    if (serviceSlug) data.service = { connect: { slug: serviceSlug } };
     if (ownerId) data.ownerId = ownerId;
-
     return this.prisma.project.create({ data });
   }
 
@@ -89,228 +27,90 @@ export class ProjectsService {
       service?: string;
       location?: string;
       featured?: boolean;
-      type?: string;
-      category?: string;
+      type?: ProjectType;
+      category?: ProjectCategory;
     },
     page = 1,
     limit = 20,
-  ): Promise<PaginatedResponse<Project>> {
-    const pageNumber = Number(page) || 1;
-    const limitNumber = Number(limit) || 20;
-
+  ) {
+    const { skip, take, meta } = paginate(page, limit);
     const where: any = {};
+
     if (filters.location) where.location = filters.location;
     if (filters.featured !== undefined) where.featured = filters.featured;
     if (filters.type) where.type = filters.type;
     if (filters.category) where.category = filters.category;
 
-    const skip = (pageNumber - 1) * limitNumber;
-
-    // Start from the base filters and optionally constrain by service
-    let baseWhere: any = { ...where };
     if (filters.service) {
       const service = await this.prisma.service.findFirst({
         where: { name: filters.service },
       });
-
-      if (!service) {
-        return {
-          data: [],
-          total: 0,
-          meta: this.getPaginationMetadata(0, pageNumber, limitNumber),
-        };
-      }
-
-      baseWhere = { ...baseWhere, serviceId: service.id };
+      if (!service) return { data: [], total: 0, meta: meta(0) };
+      where.serviceId = service.id;
     }
 
-    const [items, total] = await Promise.all([
+    const [data, total] = await Promise.all([
       this.prisma.project.findMany({
-        where: baseWhere,
-        include: { images: true, pricingTiers: true },
+        where,
+        include: { images: true, pricingTiers: true, service: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limitNumber,
+        take,
       }),
-      this.prisma.project.count({ where: baseWhere }),
+      this.prisma.project.count({ where }),
     ]);
 
-    return {
-      data: items,
-      total,
-      meta: this.getPaginationMetadata(total, pageNumber, limitNumber),
-    };
+    return { data, total, meta: meta(total) };
   }
 
-  async getBySlug(slug: string): Promise<Project> {
+  async getBySlug(slug: string) {
     const project = await this.prisma.project.findUnique({
       where: { slug },
       include: {
-        images: true,
-        pricingTiers: true,
+        images: { orderBy: { order: 'asc' } },
+        pricingTiers: { where: { isActive: true } },
         assets: {
-          include: {
-            uploadedBy: { select: { id: true, email: true, role: true } },
-          },
+          include: { uploadedBy: { select: { id: true, email: true, role: true } } },
+          orderBy: { createdAt: 'desc' },
         },
+        service: { select: { id: true, name: true } },
+        owner: { select: { id: true, email: true, role: true } },
       },
     });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
+    if (!project) throw new NotFoundException('Project not found');
     return project;
   }
 
-  async findOne(id: string): Promise<Project> {
-    const project = await this.prisma.project.findUnique({
-      where: { id },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    return project;
+  async findOne(id: string) {
+    return this.findOneOrFail(id);
   }
 
-  async update(id: string, dto: Partial<CreateProjectDto>): Promise<Project> {
-    await this.findOne(id);
-
+  async update(id: string, dto: Partial<CreateProjectDto>) {
+    await this.findOneOrFail(id);
     const { serviceSlug, ...rest } = dto as any;
     const data: any = { ...rest };
-
-    if (serviceSlug) {
-      data.service = {
-        connect: { slug: serviceSlug },
-      };
-    }
-
-    return this.prisma.project.update({
-      where: { id },
-      data,
-    });
+    if (serviceSlug) data.service = { connect: { slug: serviceSlug } };
+    return this.prisma.project.update({ where: { id }, data });
   }
 
-  async remove(id: string): Promise<void> {
-    await this.findOne(id);
-
-    await this.prisma.project.delete({
-      where: { id },
-    });
+  async remove(id: string) {
+    await this.findOneOrFail(id);
+    await this.prisma.project.delete({ where: { id } });
   }
 
-  async publish(id: string): Promise<Project> {
-    await this.findOne(id);
-
+  async publish(id: string) {
+    await this.findOneOrFail(id);
     return this.prisma.project.update({
       where: { id },
       data: { isPublished: true, publishedAt: new Date() },
     });
   }
 
-  /* -------------------------------------------------------------------------- */
-  /*                                  ASSETS                                    */
-  /* -------------------------------------------------------------------------- */
-
-  async generateUploadUrl(generateFor: {
-    fileName: string;
-    mimeType: string;
-    category?: string;
-  }) {
-    const s3Key = this.s3Service.generateUniqueKey(
-      generateFor.fileName,
-      'projects',
-      generateFor.category ?? 'assets',
-    );
-
-    const uploadUrl = await this.s3Service.generatePresignedUploadUrl(
-      s3Key,
-      generateFor.mimeType,
-    );
-
-    return { uploadUrl, s3Key };
-  }
-
-  async uploadAsset(file: any, dto: UploadAssetDto, user: any) {
-    this.logger.log('[UPLOAD] Starting asset upload', {
-      file: file.originalname,
-      user: user?.userId || user?.sub,
+  async unpublish(id: string) {
+    await this.findOneOrFail(id);
+    return this.prisma.project.update({
+      where: { id },
+      data: { isPublished: false, publishedAt: null },
     });
-
-    const project = await this.prisma.project.findUnique({
-      where: { id: dto.projectId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    if (user.role !== Role.ADMIN) {
-      const assignment = await this.prisma.projectAssignment.findFirst({
-        where: {
-          projectId: dto.projectId,
-          userId: user.userId || user.sub,
-        },
-      });
-
-      if (!assignment) {
-        throw new ForbiddenException(
-          'You do not have permission to upload assets to this project',
-        );
-      }
-    }
-
-    const key = `projects/${dto.projectId}/${Date.now()}_${file.originalname}`;
-
-    const uploaded = await this.s3Service.uploadFile(
-      file.buffer,
-      key,
-      file.mimetype,
-    );
-
-    return this.prisma.projectAsset.create({
-      data: {
-        projectId: dto.projectId,
-        tierId: dto.tierId,
-        documentType: dto.documentType,
-        version: dto.version,
-        s3Key: uploaded.key ?? key,
-        filename: file.originalname,
-        fileType: file.mimetype,
-        size: file.size,
-        uploadedById: user.userId || user.sub,
-      },
-      include: {
-        uploadedBy: { select: { id: true, email: true, role: true } },
-      },
-    });
-  }
-
-  async listAssets(
-    projectId: string,
-    page = 1,
-    limit = 20,
-    includeParams: string[] = [],
-  ): Promise<PaginatedResponse<any>> {
-    const skip = (page - 1) * limit;
-
-    const [assets, total] = await Promise.all([
-      this.prisma.projectAsset.findMany({
-        where: { projectId },
-        include: this.getIncludeObject(includeParams),
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.projectAsset.count({ where: { projectId } }),
-    ]);
-
-    return {
-      data: assets,
-      total,
-      meta: this.getPaginationMetadata(total, page, limit),
-    };
   }
 }

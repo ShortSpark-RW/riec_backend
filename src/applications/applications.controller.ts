@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiOkResponse,
@@ -6,11 +6,13 @@ import {
   ApiQuery,
   ApiTags,
   ApiProperty,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ApplicationsService } from './applications.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { getPagination } from '../common/utils/pagination.util';
 import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { JobApplicationStatus } from '@prisma/client';
 
 class CreateApplicationDto {
@@ -66,7 +68,9 @@ export class ApplicationsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List applications for a job' })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List applications for a job (admin)' })
   @ApiQuery({ name: 'jobId', required: true })
   @ApiQuery({
     name: 'status',
