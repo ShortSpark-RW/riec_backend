@@ -39,6 +39,7 @@ ENV NODE_OPTIONS=--max-old-space-size=512
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/public ./public
 COPY package.json ./
 
 # Remove devDependencies (lighter runtime)
