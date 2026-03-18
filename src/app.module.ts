@@ -17,6 +17,7 @@ import { ApplicationsModule } from './applications/applications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PrismaService } from './prisma/prisma.service';
 
 @Module({
   imports: [
@@ -38,6 +39,6 @@ import { AppService } from './app.service';
     PaymentsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, PrismaService],
 })
 export class AppModule {}
