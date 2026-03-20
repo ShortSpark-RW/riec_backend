@@ -9,14 +9,6 @@ export class CreateProjectDto {
   title: string;
 
   @ApiProperty({
-    example: 'modern-family-villa',
-    description: 'URL-friendly unique identifier',
-  })
-  @IsNotEmpty()
-  @IsString()
-  slug: string;
-
-  @ApiProperty({
     example: 'Lekki, Lagos, Nigeria',
     description: 'Project location (city/region/country)',
   })

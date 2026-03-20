@@ -87,7 +87,7 @@ export class S3Service {
     if (this.cloudfrontDomain) {
       return `${this.cloudfrontDomain}/${key}`;
     }
-    return `https://${this.bucket}.s3.amazonaws.com/${key}`;
+    return `https://${this.bucket}.s3.${this.configService.get<string>('AWS_REGION')}.amazonaws.com/${key}`;
   }
 
   async generatePrivateSignedUrl(key: string): Promise<string> {

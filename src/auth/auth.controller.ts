@@ -76,4 +76,16 @@ export class AuthController {
     const { email, password } = body;
     return this.authService.register(requesterEmail, email, password);
   }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Logout (updates last activity)' })
+  @ApiResponse({ status: 201, description: 'Logged out successfully.' })
+  @ApiUnauthorizedResponse({ description: 'Missing/invalid access token.' })
+  logout(@Req() req: Request) {
+    const user = (req as any).user as { userId?: string } | undefined;
+    const userId = user?.userId;
+    return this.authService.logout(userId);
+  }
 }

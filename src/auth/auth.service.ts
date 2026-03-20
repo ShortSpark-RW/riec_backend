@@ -99,4 +99,14 @@ export class AuthService {
       createdAt: created.createdAt,
     };
   }
+
+  async logout(userId: string | undefined) {
+    if (userId) {
+      await (this.prisma as any).user.update({
+        where: { id: userId },
+        data: { lastLoginAt: new Date() },
+      });
+    }
+    return { message: 'Logged out successfully' };
+  }
 }

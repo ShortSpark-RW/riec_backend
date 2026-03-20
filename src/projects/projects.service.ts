@@ -3,6 +3,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { paginate } from '../common/utils/pagination.util';
 import { ProjectCategory, ProjectType } from '@prisma/client';
+import {
+  generateUniqueSlug,
+  sanitizeSlug,
+  isValidSlug,
+} from '../common/utils/slug.util';
 
 @Injectable()
 export class ProjectsService {
@@ -14,11 +19,38 @@ export class ProjectsService {
     return project;
   }
 
+  /**
+   * Check if a project slug exists (excluding a specific ID)
+   */
+  private async projectSlugExists(
+    slug: string,
+    excludeId?: string,
+  ): Promise<boolean> {
+    const existing = await this.prisma.project.findFirst({
+      where: {
+        slug,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    return !!existing;
+  }
+
   async create(dto: CreateProjectDto, ownerId?: string) {
     const { serviceSlug, ...rest } = dto as any;
-    const data: any = { ...rest };
+
+    // Generate slug from title
+    const slug = await generateUniqueSlug(dto.title, (slugToCheck) =>
+      this.projectSlugExists(slugToCheck),
+    );
+
+    const data: any = {
+      ...rest,
+      slug,
+    };
+
     if (serviceSlug) data.service = { connect: { slug: serviceSlug } };
     if (ownerId) data.ownerId = ownerId;
+
     return this.prisma.project.create({ data });
   }
 
@@ -52,7 +84,11 @@ export class ProjectsService {
     const [data, total] = await Promise.all([
       this.prisma.project.findMany({
         where,
-        include: { images: true, pricingTiers: true, service: { select: { id: true, name: true } } },
+        include: {
+          images: true,
+          pricingTiers: true,
+          service: { select: { id: true, name: true } },
+        },
         orderBy: { createdAt: 'desc' },
         skip,
         take,
@@ -70,7 +106,9 @@ export class ProjectsService {
         images: { orderBy: { order: 'asc' } },
         pricingTiers: { where: { isActive: true } },
         assets: {
-          include: { uploadedBy: { select: { id: true, email: true, role: true } } },
+          include: {
+            uploadedBy: { select: { id: true, email: true, role: true } },
+          },
           orderBy: { createdAt: 'desc' },
         },
         service: { select: { id: true, name: true } },
@@ -88,8 +126,23 @@ export class ProjectsService {
   async update(id: string, dto: Partial<CreateProjectDto>) {
     await this.findOneOrFail(id);
     const { serviceSlug, ...rest } = dto as any;
-    const data: any = { ...rest };
+
+    // Generate new slug from title if title is being updated
+    let slug: string | undefined;
+
+    if (dto.title) {
+      slug = await generateUniqueSlug(dto.title, (slugToCheck) =>
+        this.projectSlugExists(slugToCheck, id),
+      );
+    }
+
+    const data: any = {
+      ...rest,
+      ...(slug ? { slug } : {}),
+    };
+
     if (serviceSlug) data.service = { connect: { slug: serviceSlug } };
+
     return this.prisma.project.update({ where: { id }, data });
   }
 
