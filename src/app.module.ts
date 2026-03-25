@@ -15,6 +15,7 @@ import { S3Module } from './s3/s3.module';
 import { CareersModule } from './careers/careers.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { PaymentsModule } from './payments/payments.module';
+import { SearchModule } from './search/search.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
@@ -36,7 +37,7 @@ import { PrismaService } from './prisma/prisma.service';
     S3Module,
     CareersModule,
     ApplicationsModule,
-    PaymentsModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
