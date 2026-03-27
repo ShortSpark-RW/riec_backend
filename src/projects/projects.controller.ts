@@ -125,4 +125,68 @@ export class ProjectsController {
   unpublish(@Param('id') id: string) {
     return this.projectsService.unpublish(id);
   }
+
+  @Get('categories')
+  @ApiOperation({ summary: 'Get all available project categories' })
+  @ApiOkResponse({ 
+    description: 'List of available project categories.',
+    example: ['RESIDENTIAL', 'COMMERCIAL', 'INDUSTRIAL']
+  })
+  getCategories() {
+    return this.projectsService.getCategories();
+  }
+
+  @Get('by-category/:category')
+  @ApiOperation({ summary: 'Get projects by specific category' })
+  @ApiParam({ 
+    name: 'category', 
+    enum: ProjectCategory,
+    example: ProjectCategory.RESIDENTIAL 
+  })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  getProjectsByCategory(
+    @Param('category') category: ProjectCategory,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+  ) {
+    return this.projectsService.getProjectsByCategory(category, page, limit);
+  }
+
+  @Get('categories/:category/count')
+  @ApiOperation({ summary: 'Get project count by category' })
+  @ApiParam({ 
+    name: 'category', 
+    enum: ProjectCategory,
+    example: ProjectCategory.RESIDENTIAL 
+  })
+  @ApiOkResponse({ 
+    description: 'Project count for the specified category.',
+    example: { category: 'RESIDENTIAL', count: 25 }
+  })
+  getProjectCountByCategory(@Param('category') category: ProjectCategory) {
+    return this.projectsService.getProjectCountByCategory(category);
+  }
+
+  @Get('categories/summary')
+  @ApiOperation({ summary: 'Get summary statistics for all categories' })
+  @ApiOkResponse({ 
+    description: 'Summary statistics including counts and percentages for all categories.',
+    example: {
+      categories: [
+        { category: 'RESIDENTIAL', count: 25 },
+        { category: 'COMMERCIAL', count: 15 },
+        { category: 'INDUSTRIAL', count: 10 }
+      ],
+      total: 50,
+      summary: [
+        { category: 'RESIDENTIAL', count: 25, percentage: 50 },
+        { category: 'COMMERCIAL', count: 15, percentage: 30 },
+        { category: 'INDUSTRIAL', count: 10, percentage: 20 }
+      ]
+    }
+  })
+  getCategoriesSummary() {
+    return this.projectsService.getCategoriesSummary();
+  }
 }

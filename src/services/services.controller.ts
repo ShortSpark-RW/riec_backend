@@ -47,9 +47,9 @@ export class ServicesController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a service by ID' })
+  @ApiOperation({ summary: 'Get a service by ID with related projects' })
   @ApiParam({ name: 'id', example: '65f34e7e0a2b3c4d5e6f7890' })
-  @ApiOkResponse({ description: 'Service with images.' })
+  @ApiOkResponse({ description: 'Service with images and related projects.' })
   @ApiNotFoundResponse({ description: 'Service not found.' })
   findOne(@Param('id') id: string) {
     return this.servicesService.findOne(id);

@@ -166,4 +166,47 @@ export class ProjectsService {
       data: { isPublished: false, publishedAt: null },
     });
   }
+
+  async getCategories() {
+    return Object.values(ProjectCategory);
+  }
+
+  async getProjectsByCategory(
+    category: ProjectCategory,
+    page = 1,
+    limit = 20,
+  ) {
+    return this.list({ category }, page, limit);
+  }
+
+  async getProjectCountByCategory(category: ProjectCategory) {
+    const count = await this.prisma.project.count({
+      where: { category },
+    });
+    return { category, count };
+  }
+
+  async getCategoriesSummary() {
+    const categories = Object.values(ProjectCategory);
+    const counts = await Promise.all(
+      categories.map(async (category) => {
+        const count = await this.prisma.project.count({
+          where: { category },
+        });
+        return { category, count };
+      }),
+    );
+    
+    const total = counts.reduce((sum, item) => sum + item.count, 0);
+    
+    return {
+      categories: counts,
+      total,
+      summary: counts.map(item => ({
+        category: item.category,
+        count: item.count,
+        percentage: total > 0 ? (item.count / total) * 100 : 0,
+      })),
+    };
+  }
 }
