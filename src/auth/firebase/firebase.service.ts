@@ -23,27 +23,11 @@ export class FirebaseService implements OnModuleInit {
         return;
       }
 
-      // Get credentials from environment variables
-      const projectId = process.env.FIREBASE_PROJECT_ID;
-      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-
-      if (!projectId || !clientEmail || !privateKey) {
-        this.logger.warn(
-          'Firebase credentials not fully provided. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY environment variables.',
-        );
-        // Don't throw - allow app to start even without Firebase (in case it's not configured yet)
-        return;
-      }
-
-      // Format private key: remove escaped newlines and ensure proper format
-      const formattedPrivateKey = privateKey.replace(/\\n/g, '\n').trim();
-
-      const credential = admin.credential.cert({
-        projectId,
-        clientEmail,
-        privateKey: formattedPrivateKey,
-      });
+      // Use applicationDefault credentials - automatically picks up:
+      // - GOOGLE_APPLICATION_CREDENTIALS env var
+      // - Well-known file locations
+      // - GCE/GAE metadata server (when deployed)
+      const credential = admin.credential.applicationDefault();
 
       admin.initializeApp({
         credential,
