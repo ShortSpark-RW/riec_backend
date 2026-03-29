@@ -1492,6 +1492,58 @@ Customer download access via token (from email after successful payment).
 }
 ```
 
+### GET `/purchases/my` (My Purchases)
+**Auth Required:** Yes (CLIENT, ADMIN, ENGINEER, COMPANY_WORKER)
+
+Retrieve a paginated list of purchases made by the authenticated user. Useful for customers to view their purchase history.
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `page` | number | No | Page number (default: 1) |
+| `limit` | number | No | Items per page (default: 20) |
+
+**Response (200):**
+```json
+{
+  "statusCode": 200,
+  "message": "Purchases retrieved successfully",
+  "data": [
+    {
+      "id": "purchase1",
+      "project": {
+        "id": "project1",
+        "title": "Modern Family Villa",
+        "slug": "modern-family-villa"
+      },
+      "tier": {
+        "id": "tier1",
+        "name": "Basic Package",
+        "currency": "NGN",
+        "amount": 150000
+      },
+      "status": "COMPLETED",
+      "fullName": "John Doe",
+      "email": "customer@example.com",
+      "flutterwaveRef": "FLW-REF-123456",
+      "createdAt": "2024-01-15T14:30:00Z",
+      "updatedAt": "2024-01-15T14:30:00Z"
+    }
+  ],
+  "total": 5,
+  "meta": {
+    "total": 5,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPreviousPage": false
+  }
+}
+```
+
+---
+
 ### POST `/projects/:projectId/purchases` (Record Purchase)
 **Auth Optional** (called by webhook or admin)
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -125,7 +126,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Logout (updates last activity)',
     description:
-      'Logout by updating the user\'s last login timestamp. This does not invalidate the JWT token (which remains valid until expiry).',
+      "Logout by updating the user's last login timestamp. This does not invalidate the JWT token (which remains valid until expiry).",
   })
   @ApiResponse({
     status: 201,
