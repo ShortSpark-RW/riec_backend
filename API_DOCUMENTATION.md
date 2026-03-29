@@ -125,6 +125,42 @@ Register a new client user (public endpoint - no authentication required).
 }
 ```
 
+### POST `/auth/firebase`
+Firebase authentication (Google OAuth) - exchange Firebase ID token for RIEC JWT.
+
+**Auth Required:** No
+
+**Request:**
+```json
+{
+  "idToken": "Firebase ID token from client SDK"
+}
+```
+
+**Response (201):**
+```json
+{
+  "statusCode": 201,
+  "message": "Firebase authentication successful",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expiresIn": 86400,
+    "role": "CLIENT",
+    "user": {
+      "id": "65f34e7e0a2b3c4d5e6f7001",
+      "email": "user@gmail.com",
+      "role": "CLIENT"
+    }
+  }
+}
+```
+
+**Error Responses:**
+- **400 Bad Request** - Invalid Firebase ID token
+- **409 Conflict** - Email already linked to another Firebase account
+
+**Note:** This endpoint supports Google OAuth via Firebase. If the Firebase email matches an existing user's email, the accounts will be automatically linked. If no user exists with that email, a new CLIENT user is created.
+
 ### POST `/auth/register`
 Register a new admin user (ADMIN only).
 
@@ -1915,8 +1951,14 @@ ADMIN               // Full administrative access
 
 ## Quick Reference: Client User Flow
 
+### Option A: Email/Password Authentication
 1. **Register**: `POST /auth/register-client` → get JWT
 2. **Login**: `POST /auth/login` → get JWT (if already registered)
+
+### Option B: Firebase Authentication (Google OAuth)
+1. **Firebase Login**: `POST /auth/firebase` with Firebase ID token → get JWT
+   - Get ID token from frontend Firebase client SDK after Google sign-in
+
 3. **Browse Projects**: `GET /projects?type=PLAN_TO_BUY` (or omit type for all)
 4. **View Project**: `GET /projects/identifier/:id?include=pricingTiers,assets`
 5. **Initiate Purchase**: `POST /payments/project-checkout` → get payment link

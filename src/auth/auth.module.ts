@@ -7,6 +7,8 @@ import { JwtStrategy } from './jwt.strategy';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard } from './roles.guard';
+import { FirebaseModule } from './firebase/firebase.module';
+import { FirebaseService } from './firebase/firebase.service';
 
 @Module({
   imports: [
@@ -17,6 +19,7 @@ import { RolesGuard } from './roles.guard';
         signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN || '1d') as any },
       }),
     }),
+    FirebaseModule,
   ],
   controllers: [AuthController],
   providers: [
@@ -25,7 +28,8 @@ import { RolesGuard } from './roles.guard';
     JwtAuthGuard,
     RolesGuard,
     PrismaService,
+    FirebaseService,
   ],
-  exports: [AuthService, JwtAuthGuard, RolesGuard],
+  exports: [AuthService, JwtAuthGuard, RolesGuard, FirebaseService],
 })
 export class AuthModule {}

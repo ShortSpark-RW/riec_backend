@@ -9,6 +9,8 @@ import {
   ApiProperty,
   ApiUnauthorizedResponse,
   ApiForbiddenResponse,
+  ApiBody,
+  ApiConflictResponse,
 } from '@nestjs/swagger';
 import { IsEmail, IsString } from 'class-validator';
 import { AuthService } from './auth.service';
@@ -169,5 +171,56 @@ export class AuthController {
   registerClient(@Body() body: RegisterDto) {
     const { email, password } = body;
     return this.authService.registerClient(email, password);
+  }
+
+  @Post('firebase')
+  @ResponseMessage('Firebase authentication successful')
+  @ApiOperation({
+    summary: 'Login with Firebase (Google OAuth)',
+    description:
+      'Exchange a Firebase ID token for a RIEC JWT token. Supports Google OAuth via Firebase. This endpoint allows users to authenticate using their Google account via Firebase.',
+  })
+  @ApiBody({
+    description: 'Firebase ID token obtained from client-side Firebase Authentication',
+    schema: {
+      type: 'object',
+      properties: {
+        idToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2MTkz...',
+          description: 'Firebase ID token from client SDK after Google sign-in',
+        },
+      },
+      required: ['idToken'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Firebase authentication successful',
+    schema: {
+      example: {
+        statusCode: 201,
+        message: 'Firebase authentication successful',
+        data: {
+          accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          expiresIn: 86400,
+          role: 'CLIENT',
+          user: {
+            id: '65f34e7e0a2b3c4d5e6f7001',
+            email: 'user@gmail.com',
+            role: 'CLIENT',
+          },
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid Firebase ID token or missing token',
+  })
+  @ApiConflictResponse({
+    description: 'Email is already linked to another Firebase account',
+  })
+  firebaseLogin(@Body('idToken') idToken: string) {
+    return this.authService.firebaseLogin(idToken);
   }
 }
