@@ -43,6 +43,7 @@ async function main() {
     {
       // Service 01 – Land Surveying
       name: 'Land Surveying',
+      slug: 'land-surveying',
       shortDescription:
         'Advanced geodetic measurements for precise topographical data.',
       detailedDescription:
@@ -71,6 +72,7 @@ async function main() {
     {
       // Service 02 – Boundary Surveying
       name: 'Boundary Surveying',
+      slug: 'boundary-surveying',
       shortDescription: 'Defining legal property limits with high precision.',
       detailedDescription:
         'Defining legal property limits with surgical accuracy to mitigate risk and ensure compliance.',
@@ -98,6 +100,7 @@ async function main() {
     {
       // Service 03 – Topographic Surveying
       name: 'Topographic Surveying',
+      slug: 'topographic-surveying',
       shortDescription:
         'High-resolution 3D terrain modeling and contour mapping.',
       detailedDescription:
@@ -126,6 +129,7 @@ async function main() {
     {
       // Service 04 – Construction Layout
       name: 'Construction Layout',
+      slug: 'construction-layout',
       shortDescription:
         'Translating blueprints to reality with precise on-site staking.',
       detailedDescription:
@@ -154,6 +158,7 @@ async function main() {
     {
       // Service 05 – Interior Design
       name: 'Interior Design',
+      slug: 'interior-design',
       shortDescription: 'Bespoke spatial planning and aesthetic curation.',
       detailedDescription:
         'Bespoke spatial planning and aesthetic curation for high-end residential and commercial environments.',
@@ -181,6 +186,7 @@ async function main() {
     {
       // Service 06 – House Design
       name: 'House Design',
+      slug: 'house-design',
       shortDescription: 'End-to-end architectural solutions for modern living.',
       detailedDescription:
         'End-to-end architectural solutions and project management from conceptualization to key handover.',
@@ -208,6 +214,7 @@ async function main() {
     {
       // Service 07 – Construction Supervision
       name: 'Construction Supervision',
+      slug: 'construction-supervision',
       shortDescription:
         'Expert supervision for structural integrity and safety.',
       detailedDescription:
@@ -236,6 +243,7 @@ async function main() {
     {
       // Service 08 – Property Valuation
       name: 'Property Valuation',
+      slug: 'property-valuation',
       shortDescription: 'Professional valuation for real estate assets.',
       detailedDescription:
         'Professional market appraisal and financial assessment for real estate assets and infrastructure.',
@@ -368,11 +376,15 @@ async function main() {
       where: { slug: project.slug },
       create: {
         ...project,
-        service: { connect: { id: service.id } },
+        services: {
+          connect: [{ id: service.id }],
+        },
       },
       update: {
         ...project,
-        service: { connect: { id: service.id } },
+        services: {
+          set: [{ id: service.id }],
+        },
       },
     });
   }

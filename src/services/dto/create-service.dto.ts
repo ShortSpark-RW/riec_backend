@@ -30,6 +30,11 @@ export class CreateServiceDto {
 
   @IsNotEmpty()
   @IsString()
+  @ApiProperty({ example: 'architectural-design' })
+  slug: string;
+
+  @IsNotEmpty()
+  @IsString()
   @ApiProperty({ example: 'We design beautiful and functional spaces.' })
   shortDescription: string;
 

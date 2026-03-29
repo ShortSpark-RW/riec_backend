@@ -136,4 +136,30 @@ export class ProjectPurchasesService {
     });
     return { token };
   }
+
+  /**
+   * Get purchases for the authenticated user (by email)
+   */
+  async getMyPurchases(email: string, page = 1, limit = 20) {
+    const { skip, take, meta } = paginate(page, limit);
+    const where = { email };
+
+    const [data, total] = await Promise.all([
+      this.prisma.purchase.findMany({
+        where,
+        include: {
+          project: { select: { id: true, title: true, slug: true } },
+          tier: {
+            select: { id: true, name: true, currency: true, amount: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.purchase.count({ where }),
+    ]);
+
+    return { data, total, meta: meta(total) };
+  }
 }

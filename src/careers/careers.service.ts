@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { paginate } from '../common/utils/pagination.util';
@@ -147,25 +147,57 @@ export class CareersService {
     return { data: items, total };
   }
 
-  findOne(id: string) {
-    return this.prisma.job.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: { applications: true },
+  // Admin: get job by ID or slug (includes unpublished)
+  async findByIdentifier(identifier: string) {
+    // Try ID first if it looks like a MongoDB ObjectId
+    if (identifier.match(/^[0-9a-fA-F]{24}$/)) {
+      const job = await this.prisma.job.findUnique({
+        where: { id: identifier },
+        include: {
+          _count: { select: { applications: true } },
         },
+      });
+      if (job) return job;
+    }
+
+    // Try slug
+    const job = await this.prisma.job.findFirst({
+      where: { slug: identifier },
+      include: {
+        _count: { select: { applications: true } },
       },
     });
+
+    if (!job) throw new NotFoundException('Job not found');
+    return job;
   }
 
-  getBySlug(slug: string) {
-    return this.prisma.job.findFirst({
-      where: { slug, isPublished: true },
+  // Public: get published job by ID or slug
+  async findPublicByIdentifier(identifier: string) {
+    // Try ID with published filter
+    if (identifier.match(/^[0-9a-fA-F]{24}$/)) {
+      const job = await this.prisma.job.findFirst({
+        where: { id: identifier, isPublished: true },
+        include: {
+          _count: { select: { applications: true } },
+        },
+      });
+      if (job) return job;
+    }
+
+    // Try slug with published filter
+    const job = await this.prisma.job.findFirst({
+      where: { slug: identifier, isPublished: true },
     });
+
+    if (!job) throw new NotFoundException('Job not found or not published');
+    return job;
   }
 
-  update(id: string, data: CreateJobDto) {
-    return this.updateJob(id, data);
+
+  async update(identifier: string, data: CreateJobDto) {
+    const job = await this.findByIdentifier(identifier);
+    return this.updateJob(job.id, data);
   }
 
   async updateJob(id: string, data: CreateJobDto) {
@@ -183,20 +215,23 @@ export class CareersService {
     });
   }
 
-  remove(id: string) {
-    return this.prisma.job.delete({ where: { id } });
+  async remove(identifier: string) {
+    const job = await this.findByIdentifier(identifier);
+    return this.prisma.job.delete({ where: { id: job.id } });
   }
 
-  publish(id: string) {
+  async publish(identifier: string) {
+    const job = await this.findByIdentifier(identifier);
     return this.prisma.job.update({
-      where: { id },
+      where: { id: job.id },
       data: { isPublished: true },
     });
   }
 
-  unpublish(id: string) {
+  async unpublish(identifier: string) {
+    const job = await this.findByIdentifier(identifier);
     return this.prisma.job.update({
-      where: { id },
+      where: { id: job.id },
       data: { isPublished: false },
     });
   }

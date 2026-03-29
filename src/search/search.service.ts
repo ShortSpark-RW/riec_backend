@@ -59,6 +59,7 @@ export class SearchService {
     },
     page = 1,
     limit = 20,
+    include?: string,
   ) {
     const { skip, take, meta } = paginate(page, limit);
     
@@ -76,14 +77,56 @@ export class SearchService {
     if (filters.location) where.location = { contains: filters.location, mode: 'insensitive' };
     if (filters.featured !== undefined) where.featured = filters.featured;
 
+    const includeObj: any = {};
+
+    if (include) {
+      const relations = include.split(',').map((r) => r.trim());
+
+      relations.forEach((relation) => {
+        switch (relation) {
+          case 'images':
+            includeObj.images = { orderBy: { order: 'asc' }, take: 1 };
+            break;
+          case 'service':
+          case 'services':
+            includeObj.services = {
+              include: {
+                service: { select: { id: true, name: true } },
+              },
+            };
+            break;
+          case 'assets':
+            includeObj.assets = {
+              include: { uploadedBy: { select: { id: true, email: true, role: true } } },
+              orderBy: { createdAt: 'desc' },
+              take: 3,
+            };
+            break;
+          case 'pricingTiers':
+            includeObj.pricingTiers = { where: { isActive: true }, orderBy: { amount: 'asc' } };
+            break;
+          case 'owner':
+            includeObj.owner = { select: { id: true, email: true, role: true } };
+            break;
+          case 'assignments':
+            includeObj.assignments = {
+              include: { user: { select: { id: true, email: true, role: true } } },
+            };
+            break;
+          case 'purchases':
+            includeObj.purchases = { orderBy: { createdAt: 'desc' } };
+            break;
+          case 'counts':
+            includeObj._count = { select: { pricingTiers: true } };
+            break;
+        }
+      });
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.project.findMany({
         where,
-        include: {
-          images: { orderBy: { order: 'asc' }, take: 1 },
-          service: { select: { id: true, name: true } },
-          _count: { select: { pricingTiers: true } },
-        },
+        include: includeObj,
         orderBy: [
           { featured: 'desc' },
           { createdAt: 'desc' },

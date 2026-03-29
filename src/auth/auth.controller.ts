@@ -15,6 +15,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './roles.guard';
 import { Role } from './role.enum';
+import { ResponseMessage } from '../common/decorators/response-message.decorator';
 
 import type { Request } from 'express';
 
@@ -44,16 +45,34 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  @ApiOperation({ summary: 'Admin login' })
+  @ResponseMessage('Login successful')
+  @ApiOperation({
+    summary: 'Admin login',
+    description:
+      'Authenticate admin user credentials and receive a JWT access token. This token must be included in the Authorization header for protected admin endpoints.',
+  })
   @ApiResponse({
     status: 201,
-    description: 'Returns a JWT access token for the admin user.',
+    description: 'JWT access token generated successfully',
     schema: {
-      example: { accessToken: 'eyJhbGci...', expiresIn: 86400, role: 'ADMIN' },
+      example: {
+        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        expiresIn: 86400,
+        role: 'ADMIN',
+        user: {
+          id: '65f34e7e0a2b3c4d5e6f7000',
+          email: 'admin@example.com',
+          role: 'ADMIN',
+        },
+      },
     },
   })
-  @ApiBadRequestResponse({ description: 'Validation error.' })
-  @ApiUnauthorizedResponse({ description: 'Invalid credentials.' })
+  @ApiBadRequestResponse({
+    description: 'Validation error - email and password are required',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid email or password',
+  })
   login(@Body() body: LoginDto) {
     const { email, password } = body;
     return this.authService.login(email, password);
@@ -63,11 +82,33 @@ export class AuthController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Register a new admin user (ADMIN only)' })
-  @ApiResponse({ status: 201, description: 'Created admin user' })
-  @ApiBadRequestResponse({ description: 'Validation error.' })
-  @ApiUnauthorizedResponse({ description: 'Missing/invalid access token.' })
-  @ApiForbiddenResponse({ description: 'Forbidden.' })
+  @ResponseMessage('Admin user created successfully')
+  @ApiOperation({
+    summary: 'Register a new admin user (ADMIN only)',
+    description:
+      'Create a new admin user account. Only existing admin users can create new admin accounts. The email must be unique.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Admin user created successfully (password excluded)',
+    schema: {
+      example: {
+        id: '65f34e7e0a2b3c4d5e6f7001',
+        email: 'newadmin@example.com',
+        role: 'ADMIN',
+        createdAt: '2024-01-15T10:30:00Z',
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error or email already exists',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Missing or invalid access token',
+  })
+  @ApiForbiddenResponse({
+    description: 'Only ADMIN users can create new admin accounts',
+  })
   async register(@Req() req: Request, @Body() body: RegisterDto) {
     // requester info should be available on req.user via JwtAuthGuard
     // pass the requester email (if present) to the service for verification
@@ -80,12 +121,52 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Logout (updates last activity)' })
-  @ApiResponse({ status: 201, description: 'Logged out successfully.' })
-  @ApiUnauthorizedResponse({ description: 'Missing/invalid access token.' })
+  @ResponseMessage('Logged out successfully')
+  @ApiOperation({
+    summary: 'Logout (updates last activity)',
+    description:
+      'Logout by updating the user\'s last login timestamp. This does not invalidate the JWT token (which remains valid until expiry).',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Logged out successfully',
+    schema: {
+      example: { message: 'Logged out successfully' },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Missing or invalid access token',
+  })
   logout(@Req() req: Request) {
     const user = (req as any).user as { userId?: string } | undefined;
     const userId = user?.userId;
     return this.authService.logout(userId);
+  }
+
+  @Post('register-client')
+  @ResponseMessage('Client registered successfully')
+  @ApiOperation({
+    summary: 'Register a new client user (public)',
+    description:
+      'Public endpoint for users to create a client account. No authentication required. The email must be unique.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Client user created successfully',
+    schema: {
+      example: {
+        id: '65f34e7e0a2b3c4d5e6f7001',
+        email: 'client@example.com',
+        role: 'CLIENT',
+        createdAt: '2024-01-15T10:30:00Z',
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error or email already exists',
+  })
+  registerClient(@Body() body: RegisterDto) {
+    const { email, password } = body;
+    return this.authService.registerClient(email, password);
   }
 }

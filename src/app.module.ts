@@ -8,6 +8,7 @@ import { ProjectAssetsModule } from './project-assets/project-assets.module';
 import { ProjectPricingTiersModule } from './project-pricing-tiers/project-pricing-tiers.module';
 import { ProjectAssignmentsModule } from './project-assignments/project-assignments.module';
 import { ProjectPurchasesModule } from './project-purchases/project-purchases.module';
+import { PurchasesModule } from './purchases/purchases.module';
 import { ServicesModule } from './services/services.module';
 import { ServiceImagesModule } from './service-images/service-images.module';
 import { ContactModule } from './contact/contact.module';
@@ -31,12 +32,14 @@ import { PrismaService } from './prisma/prisma.service';
     ProjectPricingTiersModule,
     ProjectAssignmentsModule,
     ProjectPurchasesModule,
+    PurchasesModule,
     ServicesModule,
     ServiceImagesModule,
     ContactModule,
     S3Module,
     CareersModule,
     ApplicationsModule,
+    PaymentsModule,
     SearchModule,
   ],
   controllers: [AppController],

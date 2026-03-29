@@ -72,6 +72,7 @@ model User {
   id           String    @id @default(auto()) @map("_id") @db.ObjectId
   email        String    @unique
   passwordHash String?
+  firebaseUid  String?   @unique
   role         Role      @default(CLIENT)
   createdAt    DateTime  @default(now())
   lastLoginAt  DateTime?
@@ -85,6 +86,7 @@ model User {
 model Service {
   id                  String   @id @default(auto()) @map("_id") @db.ObjectId
   name                String
+  slug                String   @unique
   shortDescription    String
   detailedDescription String?
   order               Int      @default(0)
@@ -97,7 +99,7 @@ model Service {
 
   // relations
   images   ServiceImage[] @relation("ServiceImages")
-  projects Project[]      @relation("ServiceProjects")
+  projects ProjectService[] @relation("ServiceProjects")
 }
 
 model Project {
@@ -122,11 +124,23 @@ model Project {
   assets       ProjectAsset[]      @relation("ProjectAssets")
   purchases    Purchase[]          @relation("ProjectPurchases")
   assignments  ProjectAssignment[]
+  services     ProjectService[]    @relation("ProjectServices")
   ownerId      String?             @db.ObjectId
   owner        User?               @relation("ProjectOwner", fields: [ownerId], references: [id])
+}
 
-  serviceId String?  @db.ObjectId
-  service   Service? @relation("ServiceProjects", fields: [serviceId], references: [id])
+model ProjectService {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String   @db.ObjectId
+  serviceId String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  project Project @relation("ProjectServices", fields: [projectId], references: [id])
+  service Service @relation("ServiceProjects", fields: [serviceId], references: [id])
+
+  @@index([projectId])
+  @@index([serviceId])
+  @@unique([projectId, serviceId])
 }
 
 model ServiceImage {

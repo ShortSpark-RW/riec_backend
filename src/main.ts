@@ -7,6 +7,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { join } from 'path';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { Reflector } from '@nestjs/core';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
@@ -37,7 +38,8 @@ async function bootstrap() {
   app.useStaticAssets(join(process.cwd(), 'public'));
 
   // Global response interceptor & exception filter
-  app.useGlobalInterceptors(new ResponseInterceptor());
+  const reflector = app.get(Reflector);
+  app.useGlobalInterceptors(new ResponseInterceptor(reflector));
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // Global prefix

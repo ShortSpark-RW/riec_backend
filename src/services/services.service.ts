@@ -7,25 +7,50 @@ import { paginate } from '../common/utils/pagination.util';
 export class ServicesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async findOneOrFail(id: string) {
-    const service = await this.prisma.service.findUnique({
-      where: { id },
-      include: { images: { orderBy: { order: 'asc' } } },
+  private parseIncludeQuery(include?: string) {
+    if (!include) return {};
+    
+    const relations = include.split(',').map(rel => rel.trim());
+    const includeObj: any = {};
+    
+    relations.forEach(relation => {
+      switch (relation) {
+        case 'images':
+          includeObj.images = { orderBy: { order: 'asc' } };
+          break;
+        case 'projects':
+          includeObj.projects = {
+            where: { isPublished: true },
+            include: {
+              images: { orderBy: { order: 'asc' }, take: 1 },
+              _count: { select: { pricingTiers: true } }
+            },
+            orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
+            take: 5
+          };
+          break;
+        case 'counts':
+          includeObj._count = { select: { projects: true } };
+          break;
+      }
     });
-    if (!service) throw new NotFoundException('Service not found');
-    return service;
+    
+    return includeObj;
   }
 
   async create(dto: CreateServiceDto) {
     return this.prisma.service.create({ data: dto });
   }
 
-  async list(page = 1, limit = 20) {
+  async list(page = 1, limit = 20, include?: string) {
     const { skip, take, meta } = paginate(page, limit);
+    
+    const includeRelations = this.parseIncludeQuery(include);
+    
     const [data, total] = await Promise.all([
       this.prisma.service.findMany({
         orderBy: { order: 'asc' },
-        include: { images: { orderBy: { order: 'asc' } } },
+        include: includeRelations,
         skip,
         take,
       }),
@@ -34,17 +59,46 @@ export class ServicesService {
     return { data, total, meta: meta(total) };
   }
 
-  async findOne(id: string) {
-    return this.findOneOrFail(id);
+  async findOne(id: string, include?: string) {
+    const includeRelations = this.parseIncludeQuery(include);
+    
+    const service = await this.prisma.service.findUnique({
+      where: { id },
+      include: includeRelations,
+    });
+    if (!service) throw new NotFoundException('Service not found');
+    return service;
   }
 
-  async update(id: string, dto: Partial<CreateServiceDto>) {
-    await this.findOneOrFail(id);
-    return this.prisma.service.update({ where: { id }, data: dto });
+  async findByIdentifier(identifier: string, include?: string) {
+    const includeRelations = this.parseIncludeQuery(include);
+    
+    // Try to find by ID first (MongoDB ObjectId format)
+    if (identifier.match(/^[0-9a-fA-F]{24}$/)) {
+      const service = await this.prisma.service.findUnique({
+        where: { id: identifier },
+        include: includeRelations,
+      });
+      if (service) return service;
+    }
+    
+    // If not found by ID or doesn't look like an ID, try by slug
+    const service = await this.prisma.service.findUnique({
+      where: { slug: identifier },
+      include: includeRelations,
+    });
+    
+    if (!service) throw new NotFoundException('Service not found');
+    return service;
   }
 
-  async remove(id: string) {
-    await this.findOneOrFail(id);
-    await this.prisma.service.delete({ where: { id } });
+  async update(identifier: string, dto: Partial<CreateServiceDto>) {
+    const service = await this.findByIdentifier(identifier);
+    return this.prisma.service.update({ where: { id: service.id }, data: dto });
+  }
+
+  async remove(identifier: string) {
+    const service = await this.findByIdentifier(identifier);
+    await this.prisma.service.delete({ where: { id: service.id } });
   }
 }

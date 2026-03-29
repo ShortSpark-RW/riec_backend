@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ProjectCategory, ProjectType } from '@prisma/client';
 
 export class CreateProjectDto {
@@ -17,12 +17,14 @@ export class CreateProjectDto {
   location: string;
 
   @ApiProperty({
-    example: 'architectural-design',
-    description: 'Slug of the primary service for this project',
+    example: ['architectural-design', 'construction-management'],
+    description: 'Array of service slugs for this project',
+    required: false,
   })
   @IsOptional()
-  @IsString()
-  serviceSlug?: string;
+  @IsArray()
+  @IsString({ each: true })
+  serviceSlugs?: string[];
 
   @ApiProperty({ enum: ProjectType, example: ProjectType.COMPLETED })
   @IsEnum(ProjectType)

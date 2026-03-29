@@ -109,4 +109,28 @@ export class AuthService {
     }
     return { message: 'Logged out successfully' };
   }
+
+  /**
+   * Register a new client user (public endpoint - no authentication required)
+   */
+  async registerClient(email: string, password: string) {
+    const existing = await (this.prisma as any).user.findUnique({
+      where: { email },
+    });
+    if (existing) {
+      throw new UnauthorizedException('User with this email already exists');
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const created = await (this.prisma as any).user.create({
+      data: { email, passwordHash, role: Role.CLIENT },
+    });
+    return {
+      id: created.id,
+      email: created.email,
+      role: created.role,
+      createdAt: created.createdAt,
+    };
+  }
 }

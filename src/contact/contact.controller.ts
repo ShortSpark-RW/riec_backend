@@ -23,6 +23,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { getPagination } from '../common/utils/pagination.util';
+import { ResponseMessage } from '../common/decorators/response-message.decorator';
 
 class ContactDto {
   @IsString()
@@ -55,10 +56,29 @@ export class ContactController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Submit a contact form' })
-  @ApiOkResponse({ description: 'Created contact submission.' })
+  @ResponseMessage('Contact submission created successfully')
+  @ApiOperation({
+    summary: 'Submit a contact form',
+    description:
+      'Public endpoint for submitting contact form inquiries. All fields except phone and company are required. Submissions are stored and accessible to admins via the admin endpoint.',
+  })
+  @ApiOkResponse({
+    description: 'Contact submission created successfully',
+    schema: {
+      example: {
+        id: '65f34e7e0a2b3c4d5e6f7890',
+        name: 'Grace Hopper',
+        email: 'grace@example.com',
+        phone: '+2348012345678',
+        company: 'RIEC Ltd.',
+        message: 'Hello, I would like to request a quote for a residential project.',
+        read: false,
+        createdAt: '2024-01-15T14:30:00Z',
+      },
+    },
+  })
   @ApiBadRequestResponse({
-    description: 'Validation error (missing/invalid fields).',
+    description: 'Validation error - name, email, and message are required',
   })
   create(@Body() dto: ContactDto) {
     return this.prisma.contactSubmission.create({ data: dto });
@@ -67,14 +87,48 @@ export class ContactController {
   @UseGuards(JwtAuthGuard)
   @Get('admin/submissions')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'List contact submissions (admin)' })
-  @ApiQuery({ name: 'page', required: false, example: 1 })
-  @ApiQuery({ name: 'pageSize', required: false, example: 20 })
+  @ResponseMessage('Contact submissions retrieved successfully')
+  @ApiOperation({
+    summary: 'List contact submissions (admin)',
+    description:
+      'Retrieve a paginated list of all contact form submissions. Requires admin authentication.',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    example: 20,
+    description: 'Items per page (default: 20)',
+  })
   @ApiOkResponse({
-    description: 'Paginated list of contact submissions.',
+    description: 'Paginated list of contact submissions ordered by newest first',
+    schema: {
+      example: {
+        data: [
+          {
+            id: '65f34e7e0a2b3c4d5e6f7890',
+            name: 'Grace Hopper',
+            email: 'grace@example.com',
+            phone: '+2348012345678',
+            company: 'RIEC Ltd.',
+            message: 'Hello, I would like to request a quote...',
+            read: false,
+            createdAt: '2024-01-15T14:30:00Z',
+          },
+        ],
+        total: 45,
+        page: 1,
+        pageSize: 20,
+      },
+    },
   })
   @ApiBadRequestResponse({
-    description: 'Validation error (invalid pagination).',
+    description: 'Validation error - pagination parameters must be valid numbers',
   })
   async list(@Query() pagination?: PaginationDto) {
     const { page, pageSize, skip, take } = getPagination(pagination ?? {});
@@ -92,9 +146,31 @@ export class ContactController {
   @UseGuards(JwtAuthGuard)
   @Patch('admin/submissions/:id/read')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Mark a contact submission as read (admin)' })
-  @ApiParam({ name: 'id', example: '65f34e7e0a2b3c4d5e6f7890' })
-  @ApiBadRequestResponse({ description: 'Invalid submission id.' })
+  @ResponseMessage('Submission marked as read successfully')
+  @ApiOperation({
+    summary: 'Mark a contact submission as read (admin)',
+    description: 'Mark a contact submission as read to track which inquiries have been addressed. Requires admin authentication.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the contact submission',
+    example: '65f34e7e0a2b3c4d5e6f7890',
+  })
+  @ApiOkResponse({
+    description: 'Submission marked as read',
+    schema: {
+      example: {
+        id: '65f34e7e0a2b3c4d5e6f7890',
+        name: 'Grace Hopper',
+        email: 'grace@example.com',
+        read: true,
+        updatedAt: '2024-01-16T09:15:00Z',
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid submission ID',
+  })
   markRead(@Param('id') id: string) {
     return this.prisma.contactSubmission.update({
       where: { id },
