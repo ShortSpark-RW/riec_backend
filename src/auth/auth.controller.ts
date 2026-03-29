@@ -181,7 +181,8 @@ export class AuthController {
       'Exchange a Firebase ID token for a RIEC JWT token. Supports Google OAuth via Firebase. This endpoint allows users to authenticate using their Google account via Firebase.',
   })
   @ApiBody({
-    description: 'Firebase ID token obtained from client-side Firebase Authentication',
+    description:
+      'Firebase ID token obtained from client-side Firebase Authentication',
     schema: {
       type: 'object',
       properties: {

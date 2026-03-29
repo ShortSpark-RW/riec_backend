@@ -9,6 +9,7 @@ import { ProjectPricingTiersModule } from './project-pricing-tiers/project-prici
 import { ProjectAssignmentsModule } from './project-assignments/project-assignments.module';
 import { ProjectPurchasesModule } from './project-purchases/project-purchases.module';
 import { PurchasesModule } from './purchases/purchases.module';
+import { FavoritesModule } from './favorites/favorites.module';
 import { ServicesModule } from './services/services.module';
 import { ServiceImagesModule } from './service-images/service-images.module';
 import { ContactModule } from './contact/contact.module';
@@ -33,6 +34,7 @@ import { PrismaService } from './prisma/prisma.service';
     ProjectAssignmentsModule,
     ProjectPurchasesModule,
     PurchasesModule,
+    FavoritesModule,
     ServicesModule,
     ServiceImagesModule,
     ContactModule,

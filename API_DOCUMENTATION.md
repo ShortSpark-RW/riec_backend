@@ -30,9 +30,10 @@
 10. [Project Assets (Documents)](#project-assets)
 11. [Project Pricing Tiers](#project-pricing-tiers)
 12. [Project Purchases & Payments](#project-purchases--payments)
-13. [Contact](#contact)
-14. [Common Patterns](#common-patterns)
-15. [Enums Reference](#enums-reference)
+13. [Favorites](#favorites)
+14. [Contact](#contact)
+15. [Common Patterns](#common-patterns)
+16. [Enums Reference](#enums-reference)
 
 ---
 
@@ -1683,6 +1684,121 @@ Generate one-time download token.
 
 ---
 
+## Favorites
+
+### POST `/favorites/projects/:projectId` (Add to Favorites)
+Add a project to the authenticated user's favorites list.
+
+**Auth Required:** Yes (CLIENT, ADMIN, ENGINEER, COMPANY_WORKER)
+
+**Path Parameters:**
+- `projectId` (string) - MongoDB ObjectId of the project
+
+**Response (201):**
+```json
+{
+  "statusCode": 201,
+  "message": "Project added to favorites successfully",
+  "data": {
+    "id": "fav1",
+    "userId": "65f34e7e0a2b3c4d5e6f7000",
+    "projectId": "65f34e7e0a2b3c4d5e6f7890",
+    "project": {
+      "id": "65f34e7e0a2b3c4d5e6f7890",
+      "title": "Modern Family Villa",
+      "slug": "modern-family-villa"
+    },
+    "createdAt": "2024-01-15T14:30:00Z"
+  }
+}
+```
+
+**Error (404):** Project not found or not published
+**Error (409):** Project is already in favorites
+
+---
+
+### DELETE `/favorites/projects/:projectId` (Remove from Favorites)
+Remove a project from the authenticated user's favorites.
+
+**Auth Required:** Yes (CLIENT, ADMIN, ENGINEER, COMPANY_WORKER)
+
+**Path Parameters:**
+- `projectId` (string) - MongoDB ObjectId of the project
+
+**Response (204):** No content
+
+**Error (404):** Favorite not found
+
+---
+
+### GET `/favorites` (List My Favorites)
+Retrieve a paginated list of projects favorited by the authenticated user.
+
+**Auth Required:** Yes (CLIENT, ADMIN, ENGINEER, COMPANY_WORKER)
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `page` | number | No | Page number (default: 1) |
+| `limit` | number | No | Items per page (default: 20) |
+
+**Response (200):**
+```json
+{
+  "statusCode": 200,
+  "message": "Favorites retrieved successfully",
+  "data": [
+    {
+      "id": "fav1",
+      "project": {
+        "id": "65f34e7e0a2b3c4d5e6f7890",
+        "title": "Modern Family Villa",
+        "slug": "modern-family-villa",
+        "location": "Lekki, Lagos",
+        "type": "PLAN_TO_BUY",
+        "category": "RESIDENTIAL",
+        "featured": true,
+        "isPublished": true
+      },
+      "createdAt": "2024-01-15T14:30:00Z"
+    }
+  ],
+  "total": 5,
+  "meta": {
+    "total": 5,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPreviousPage": false
+  }
+}
+```
+
+---
+
+### GET `/favorites/projects/:projectId/status` (Check Favorite Status)
+Check whether the authenticated user has favorited a specific project.
+
+**Auth Required:** Yes (CLIENT, ADMIN, ENGINEER, COMPANY_WORKER)
+
+**Path Parameters:**
+- `projectId` (string) - MongoDB ObjectId of the project
+
+**Response (200):**
+```json
+{
+  "statusCode": 200,
+  "message": "Favorite status retrieved",
+  "data": {
+    "favorited": true
+  }
+}
+```
+
+---
+
 ## Contact
 
 ### POST `/contact`
@@ -1967,8 +2083,13 @@ ADMIN               // Full administrative access
    - Via email link: `GET /payments/downloads/:token`
    - Or logged in: `GET /projects/:projectId/purchases/:purchaseId/downloads`
 8. **View Purchase History**: `GET /purchases/my`
+9. **Manage Favorites**:
+   - Add to favorites: `POST /favorites/projects/:projectId`
+   - Remove from favorites: `DELETE /favorites/projects/:projectId`
+   - View all favorites: `GET /favorites`
+   - Check if favorited: `GET /favorites/projects/:projectId/status`
 
 ---
 
-Last Updated: 2024-01-29
-API Version: 1.0
+Last Updated: 2026-03-29
+API Version: 1.1
