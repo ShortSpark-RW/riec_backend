@@ -12,6 +12,7 @@ import { PurchasesModule } from './purchases/purchases.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { ServicesModule } from './services/services.module';
 import { ServiceImagesModule } from './service-images/service-images.module';
+import { UsersModule } from './users/users.module';
 import { ContactModule } from './contact/contact.module';
 import { S3Module } from './s3/s3.module';
 import { CareersModule } from './careers/careers.module';
@@ -37,6 +38,7 @@ import { PrismaService } from './prisma/prisma.service';
     FavoritesModule,
     ServicesModule,
     ServiceImagesModule,
+    UsersModule,
     ContactModule,
     S3Module,
     CareersModule,

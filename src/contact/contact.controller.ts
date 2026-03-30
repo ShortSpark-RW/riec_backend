@@ -24,6 +24,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { getPagination } from '../common/utils/pagination.util';
 import { ResponseMessage } from '../common/decorators/response-message.decorator';
+import { EmailService } from './email.service';
 
 class ContactDto {
   @IsString()
@@ -50,10 +51,70 @@ class ContactDto {
   message: string;
 }
 
+class QuoteRequestDto {
+  @IsString()
+  @ApiProperty({ example: 'New build' })
+  projectType: string;
+
+  @IsString()
+  @ApiProperty({ example: 'Nairobi, Kenya' })
+  location: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ required: false, example: 'Q3 2026' })
+  timeline?: string;
+
+  @IsString()
+  @ApiProperty({ example: '$100k - $250k' })
+  budgetRange: string;
+
+  @IsString()
+  @ApiProperty({ example: 'Architecture, Construction' })
+  servicesNeeded: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ required: false, example: '500' })
+  size?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ required: false, example: '2' })
+  floors?: string;
+
+  @IsString()
+  @ApiProperty({ example: 'John Doe' })
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ required: false, example: 'Acme Corp' })
+  company?: string;
+
+  @IsEmail()
+  @ApiProperty({ example: 'john@example.com' })
+  email: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ required: false, example: '+1234567890' })
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  @ApiProperty({ required: false, example: 'Additional details...' })
+  notes?: string;
+}
+
 @ApiTags('Contact Us Endpoints')
 @Controller('contact')
 export class ContactController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
+  ) {}
 
   @Post()
   @ResponseMessage('Contact submission created successfully')
@@ -82,6 +143,38 @@ export class ContactController {
   })
   create(@Body() dto: ContactDto) {
     return this.prisma.contactSubmission.create({ data: dto });
+  }
+
+  @Post('quote')
+  @ResponseMessage('Quote request sent successfully')
+  @ApiOperation({
+    summary: 'Send a quote request email',
+    description:
+      'Public endpoint for sending quote request emails via Resend. This endpoint does not store the data but directly sends an email to the configured recipient.',
+  })
+  @ApiOkResponse({
+    description: 'Quote request email sent successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Quote request email sent successfully',
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error - required fields are missing',
+  })
+  async sendQuoteEmail(@Body() dto: QuoteRequestDto) {
+    const result = await this.emailService.sendQuoteEmail(dto);
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to send email');
+    }
+
+    return {
+      success: true,
+      message: 'Quote request email sent successfully',
+    };
   }
 
   @UseGuards(JwtAuthGuard)

@@ -18,7 +18,11 @@ async function bootstrap() {
 
   // CORS
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: [
+      'http://localhost:5173',
+      'https://riec-frontend.onrender.com',
+      ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

@@ -28,18 +28,18 @@ import { FavoritesService } from './favorites.service';
 export class FavoritesController {
   constructor(private readonly favoritesService: FavoritesService) {}
 
-  @Post('projects/:projectId')
+  @Post('projects/:identifier')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Add a project to favorites',
     description:
-      'Mark a project as favorite for the authenticated user. Only published projects can be favorited.',
+      'Mark a project as favorite for the authenticated user. Only published projects can be favorited. The identifier can be either a MongoDB ObjectId or a project slug.',
   })
   @ApiParam({
-    name: 'projectId',
-    description: 'MongoDB ObjectId of the project',
-    example: '65f34e7e0a2b3c4d5e6f7890',
+    name: 'identifier',
+    description: 'MongoDB ObjectId or project slug',
+    example: '65f34e7e0a2b3c4d5e6f7890 or modern-family-villa',
   })
   @ApiCreatedResponse({
     description: 'Project added to favorites successfully',
@@ -63,28 +63,28 @@ export class FavoritesController {
   })
   @ApiNotFoundResponse({ description: 'Project not found or not published' })
   @ApiConflictResponse({ description: 'Project is already in favorites' })
-  async addFavorite(@Param('projectId') projectId: string, @Req() req: any) {
+  async addFavorite(@Param('identifier') identifier: string, @Req() req: any) {
     const userId = req.user.userId;
-    return this.favoritesService.addFavorite(userId, projectId);
+    return this.favoritesService.addFavorite(userId, identifier);
   }
 
-  @Delete('projects/:projectId')
+  @Delete('projects/:identifier')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Remove a project from favorites',
-    description: 'Unmark a project as favorite for the authenticated user.',
+    description: 'Unmark a project as favorite for the authenticated user. The identifier can be either a MongoDB ObjectId or a project slug.',
   })
   @ApiParam({
-    name: 'projectId',
-    description: 'MongoDB ObjectId of the project',
-    example: '65f34e7e0a2b3c4d5e6f7890',
+    name: 'identifier',
+    description: 'MongoDB ObjectId or project slug',
+    example: '65f34e7e0a2b3c4d5e6f7890 or modern-family-villa',
   })
   @ApiNoContentResponse({ description: 'Project removed from favorites' })
   @ApiNotFoundResponse({ description: 'Favorite not found' })
-  async removeFavorite(@Param('projectId') projectId: string, @Req() req: any) {
+  async removeFavorite(@Param('identifier') identifier: string, @Req() req: any) {
     const userId = req.user.userId;
-    return this.favoritesService.removeFavorite(userId, projectId);
+    return this.favoritesService.removeFavorite(userId, identifier);
   }
 
   @Get()
@@ -144,18 +144,18 @@ export class FavoritesController {
     return this.favoritesService.getUserFavorites(userId, page, limit);
   }
 
-  @Get('projects/:projectId/status')
+  @Get('projects/:identifier/status')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Check if project is favorited',
     description:
-      'Check whether the authenticated user has favorited a specific project.',
+      'Check whether the authenticated user has favorited a specific project. The identifier can be either a MongoDB ObjectId or a project slug.',
   })
   @ApiParam({
-    name: 'projectId',
-    description: 'MongoDB ObjectId of the project',
-    example: '65f34e7e0a2b3c4d5e6f7890',
+    name: 'identifier',
+    description: 'MongoDB ObjectId or project slug',
+    example: '65f34e7e0a2b3c4d5e6f7890 or modern-family-villa',
   })
   @ApiOkResponse({
     description: 'Favorite status',
@@ -163,9 +163,9 @@ export class FavoritesController {
       example: { favorited: true },
     },
   })
-  async checkFavorite(@Param('projectId') projectId: string, @Req() req: any) {
+  async checkFavorite(@Param('identifier') identifier: string, @Req() req: any) {
     const userId = req.user.userId;
-    const favorited = await this.favoritesService.checkIfFavorited(userId, projectId);
+    const favorited = await this.favoritesService.checkIfFavorited(userId, identifier);
     return { favorited };
   }
 }

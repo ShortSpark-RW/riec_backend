@@ -12,9 +12,11 @@ export class AppService {
   async health() {
     let db = 'ok';
     try {
-      await (this.prisma as any).$queryRaw`SELECT 1`;
-    } catch {
+      // Check connectivity using ContactSubmission collection (no updatedAt field)
+      await this.prisma.contactSubmission.count();
+    } catch (error) {
       db = 'error';
+      console.error('Health check database error:', error);
     }
     return {
       status: db === 'ok' ? 'ok' : 'degraded',

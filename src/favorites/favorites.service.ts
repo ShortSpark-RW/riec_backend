@@ -1,20 +1,49 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class FavoritesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async addFavorite(userId: string, projectId: string) {
-    // Check if project exists and is published
+  /**
+   * Resolve a project identifier (slug or ID) to the actual project ID
+   */
+  private async resolveProjectId(identifier: string): Promise<string> {
+    // Try to find by ID first (MongoDB ObjectId format, 24 hex chars)
+    if (identifier.match(/^[0-9a-fA-F]{24}$/)) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: identifier },
+        select: { id: true },
+      });
+      if (project) return project.id;
+    }
+
+    // Try to find by slug
     const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-      select: { id: true, isPublished: true },
+      where: { slug: identifier },
+      select: { id: true },
     });
+
     if (!project) {
       throw new NotFoundException('Project not found');
     }
-    if (!project.isPublished) {
+
+    return project.id;
+  }
+
+  async addFavorite(userId: string, identifier: string) {
+    const projectId = await this.resolveProjectId(identifier);
+
+    // Check if project is published
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { isPublished: true },
+    });
+    if (!project?.isPublished) {
       throw new NotFoundException('Project not found');
     }
 
@@ -48,7 +77,9 @@ export class FavoritesService {
     });
   }
 
-  async removeFavorite(userId: string, projectId: string) {
+  async removeFavorite(userId: string, identifier: string) {
+    const projectId = await this.resolveProjectId(identifier);
+
     const favorite = await this.prisma.favorite.findFirst({
       where: { userId, projectId },
     });
@@ -107,7 +138,8 @@ export class FavoritesService {
     };
   }
 
-  async checkIfFavorited(userId: string, projectId: string): Promise<boolean> {
+  async checkIfFavorited(userId: string, identifier: string): Promise<boolean> {
+    const projectId = await this.resolveProjectId(identifier);
     const favorite = await this.prisma.favorite.findFirst({
       where: { userId, projectId },
     });

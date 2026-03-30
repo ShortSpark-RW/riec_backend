@@ -179,25 +179,27 @@ export class AuthService {
         );
       }
 
-      // Link this existing user with Firebase UID
+      // Link this existing user with Firebase UID AND set profile image from Google
       user = await (this.prisma as any).user.update({
         where: { email },
         data: {
           firebaseUid,
           lastLoginAt: new Date(),
+          ...(photoURL && !user.profileImg ? { profileImg: photoURL } : {}),
         },
       });
 
       return this.generateJwtToken(user);
     }
 
-    // 4. No user exists - create new CLIENT user
+    // 4. No user exists - create new CLIENT user with profile image from Google
     const newUser = await (this.prisma as any).user.create({
       data: {
         email,
         firebaseUid,
         role: Role.CLIENT,
         lastLoginAt: new Date(),
+        profileImg: photoURL || '',
       },
     });
 

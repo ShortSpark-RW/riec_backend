@@ -22,18 +22,19 @@
 2. [Authentication](#authentication)
 3. [Projects](#projects)
 4. [Services](#services)
-5. [Careers (Jobs)](#careers)
+5. [Careers (Jobs)](#careers-jobs)
 6. [Applications](#applications)
 7. [Search](#search)
 8. [Project Images](#project-images)
 9. [Service Images](#service-images)
-10. [Project Assets (Documents)](#project-assets)
+10. [Project Assets (Documents)](#project-assets-documents)
 11. [Project Pricing Tiers](#project-pricing-tiers)
 12. [Project Purchases & Payments](#project-purchases--payments)
 13. [Favorites](#favorites)
-14. [Contact](#contact)
-15. [Common Patterns](#common-patterns)
-16. [Enums Reference](#enums-reference)
+14. [User Profile](#user-profile)
+15. [Contact](#contact)
+16. [Common Patterns](#common-patterns)
+17. [Enums Reference](#enums-reference)
 
 ---
 
@@ -93,7 +94,9 @@ Admin/Client login - returns JWT token.
     "user": {
       "id": "65f34e7e0a2b3c4d5e6f7000",
       "email": "admin@example.com",
-      "role": "ADMIN"
+      "role": "ADMIN",
+      "profileImg": null,
+      "coverImg": null
     }
   }
 }
@@ -121,6 +124,8 @@ Register a new client user (public endpoint - no authentication required).
     "id": "65f34e7e0a2b3c4d5e6f7001",
     "email": "client@example.com",
     "role": "CLIENT",
+    "profileImg": null,
+    "coverImg": null,
     "createdAt": "2024-01-15T10:30:00Z"
   }
 }
@@ -150,7 +155,9 @@ Firebase authentication (Google OAuth) - exchange Firebase ID token for RIEC JWT
     "user": {
       "id": "65f34e7e0a2b3c4d5e6f7001",
       "email": "user@gmail.com",
-      "role": "CLIENT"
+      "role": "CLIENT",
+      "profileImg": "https://example.com/google-profile.jpg",
+      "coverImg": null
     }
   }
 }
@@ -1686,13 +1693,14 @@ Generate one-time download token.
 
 ## Favorites
 
-### POST `/favorites/projects/:projectId` (Add to Favorites)
+### POST `/favorites/projects/:identifier` (Add to Favorites)
+
 Add a project to the authenticated user's favorites list.
 
 **Auth Required:** Yes (CLIENT, ADMIN, ENGINEER, COMPANY_WORKER)
 
 **Path Parameters:**
-- `projectId` (string) - MongoDB ObjectId of the project
+- `identifier` (string) - MongoDB ObjectId (24 hex chars) or project slug
 
 **Response (201):**
 ```json
@@ -1706,7 +1714,11 @@ Add a project to the authenticated user's favorites list.
     "project": {
       "id": "65f34e7e0a2b3c4d5e6f7890",
       "title": "Modern Family Villa",
-      "slug": "modern-family-villa"
+      "slug": "modern-family-villa",
+      "location": "Lekki, Lagos",
+      "type": "PLAN_TO_BUY",
+      "category": "RESIDENTIAL",
+      "featured": true
     },
     "createdAt": "2024-01-15T14:30:00Z"
   }
@@ -1716,32 +1728,31 @@ Add a project to the authenticated user's favorites list.
 **Error (404):** Project not found or not published
 **Error (409):** Project is already in favorites
 
----
+### DELETE `/favorites/projects/:identifier` (Remove from Favorites)
 
-### DELETE `/favorites/projects/:projectId` (Remove from Favorites)
 Remove a project from the authenticated user's favorites.
 
 **Auth Required:** Yes (CLIENT, ADMIN, ENGINEER, COMPANY_WORKER)
 
 **Path Parameters:**
-- `projectId` (string) - MongoDB ObjectId of the project
+- `identifier` (string) - MongoDB ObjectId (24 hex chars) or project slug
 
 **Response (204):** No content
 
 **Error (404):** Favorite not found
 
----
-
 ### GET `/favorites` (List My Favorites)
-Retrieve a paginated list of projects favorited by the authenticated user.
+
+Retrieve a paginated list of projects favorited by the authenticated user. Only includes published projects.
 
 **Auth Required:** Yes (CLIENT, ADMIN, ENGINEER, COMPANY_WORKER)
 
 **Query Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `page` | number | No | Page number (default: 1) |
-| `limit` | number | No | Items per page (default: 20) |
+
+| Parameter | Type    | Required | Description                      |
+|-----------|---------|----------|----------------------------------|
+| `page`    | number  | No       | Page number (default: 1)         |
+| `limit`   | number  | No       | Items per page (default: 20)     |
 
 **Response (200):**
 ```json
@@ -1751,6 +1762,8 @@ Retrieve a paginated list of projects favorited by the authenticated user.
   "data": [
     {
       "id": "fav1",
+      "userId": "65f34e7e0a2b3c4d5e6f7000",
+      "projectId": "65f34e7e0a2b3c4d5e6f7890",
       "project": {
         "id": "65f34e7e0a2b3c4d5e6f7890",
         "title": "Modern Family Villa",
@@ -1776,15 +1789,14 @@ Retrieve a paginated list of projects favorited by the authenticated user.
 }
 ```
 
----
+### GET `/favorites/projects/:identifier/status` (Check Favorite Status)
 
-### GET `/favorites/projects/:projectId/status` (Check Favorite Status)
 Check whether the authenticated user has favorited a specific project.
 
 **Auth Required:** Yes (CLIENT, ADMIN, ENGINEER, COMPANY_WORKER)
 
 **Path Parameters:**
-- `projectId` (string) - MongoDB ObjectId of the project
+- `identifier` (string) - MongoDB ObjectId (24 hex chars) or project slug
 
 **Response (200):**
 ```json
@@ -1799,12 +1811,105 @@ Check whether the authenticated user has favorited a specific project.
 
 ---
 
+## User Profile
+
+User profile endpoints allow users to view and update their profile information including profile and cover images.
+
+### GET `/users/profile` (Get Profile)
+Retrieve the authenticated user's profile details with related entities.
+
+**Auth Required:** Yes (CLIENT, ADMIN, ENGINEER, COMPANY_WORKER)
+
+**Response (200):**
+```json
+{
+  "statusCode": 200,
+  "message": "Profile retrieved successfully",
+  "data": {
+    "id": "65f34e7e0a2b3c4d5e6f7000",
+    "email": "client@example.com",
+    "role": "CLIENT",
+    "profileImg": "https://example.com/profile.jpg",
+    "coverImg": "https://example.com/cover.jpg",
+    "createdAt": "2024-01-15T10:30:00Z",
+    "lastLoginAt": "2024-01-20T14:15:00Z",
+    "updatedAt": "2024-01-21T10:30:00Z",
+    "stats": {
+      "projectsCount": 2,
+      "assignmentsCount": 3,
+      "favoritesCount": 5,
+      "uploadsCount": 10
+    },
+    "projects": [
+      {
+        "id": "proj1",
+        "title": "Modern Family Villa",
+        "slug": "modern-family-villa",
+        "isPublished": true,
+        "createdAt": "2024-01-15T10:30:00Z"
+      }
+    ],
+    "assignments": [
+      {
+        "id": "assign1",
+        "role": "Engineer",
+        "assignedAt": "2024-01-16T09:00:00Z",
+        "project": {
+          "id": "proj1",
+          "title": "Modern Family Villa",
+          "slug": "modern-family-villa"
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+### PATCH `/users/profile` (Update Profile)
+Update the authenticated user's profile image and/or cover image.
+
+**Auth Required:** Yes (CLIENT, ADMIN, ENGINEER, COMPANY_WORKER)
+
+**Request Body (UpdateUserProfileDto):**
+```json
+{
+  "profileImg": "https://example.com/new-profile.jpg",
+  "coverImg": "https://example.com/new-cover.jpg"
+}
+```
+
+**Note:** Only include the fields you want to update. Both fields are optional.
+
+**Response (200):**
+```json
+{
+  "statusCode": 200,
+  "message": "Profile updated successfully",
+  "data": {
+    "id": "65f34e7e0a2b3c4d5e6f7000",
+    "email": "client@example.com",
+    "role": "CLIENT",
+    "profileImg": "https://example.com/new-profile.jpg",
+    "coverImg": "https://example.com/new-cover.jpg",
+    "createdAt": "2024-01-15T10:30:00Z",
+    "lastLoginAt": "2024-01-20T14:15:00Z",
+    "updatedAt": "2024-01-21T10:30:00Z"
+  }
+}
+```
+
+---
+
 ## Contact
 
 ### POST `/contact`
+
 Public contact form submission.
 
 **Request Body:**
+
 ```json
 {
   "name": "Grace Hopper",
@@ -1836,12 +1941,15 @@ Public contact form submission.
 ```
 
 ### GET `/contact/admin/submissions` (List)
+
 **Auth Required:** Yes (ADMIN)
 
 **Query Parameters:**
+
 - `page`, `pageSize` (pagination)
 
 **Response (200):**
+
 ```json
 {
   "statusCode": 200,
@@ -1865,9 +1973,11 @@ Public contact form submission.
 ```
 
 ### PATCH `/contact/admin/submissions/:id/read` (Mark as Read)
+
 **Auth Required:** Yes (ADMIN)
 
 **Response (200):**
+
 ```json
 {
   "statusCode": 200,
@@ -1886,13 +1996,16 @@ Public contact form submission.
 ## Common Patterns
 
 ### Pagination
+
 All list endpoints support pagination with consistent response format:
 
 **Query Parameters:**
+
 - `page` (default: 1)
 - `limit` (default: 20)
 
 **Response:**
+
 ```json
 {
   "statusCode": 200,
@@ -1911,9 +2024,11 @@ All list endpoints support pagination with consistent response format:
 ```
 
 ### Include Parameter
+
 Many GET endpoints support an `include` query parameter to fetch related data in a single request.
 
 **Common include values:**
+
 - `images` - fetch associated images
 - `services` - fetch related services
 - `assets` - fetch project assets/documents
@@ -1925,23 +2040,27 @@ Many GET endpoints support an `include` query parameter to fetch related data in
 
 **Usage:** `GET /projects/identifier/:identifier?include=images,services`
 
-### Authentication
+### API Authentication
+
 Protected endpoints require JWT token in Authorization header:
 
-```
+```text
 Authorization: Bearer <access_token>
 ```
 
 **Roles:**
+
 - `ADMIN` - Full access to all endpoints
 - `CLIENT` - Limited access (public endpoints + own purchases)
 - `ENGINEER` - Can view projects, assignments
 - `COMPANY_WORKER` - Similar to ENGINEER
 
 ### Error Responses
+
 All errors follow this format:
 
 **400 Bad Request:**
+
 ```json
 {
   "statusCode": 400,
@@ -1951,6 +2070,7 @@ All errors follow this format:
 ```
 
 **401 Unauthorized:**
+
 ```json
 {
   "statusCode": 401,
@@ -1960,6 +2080,7 @@ All errors follow this format:
 ```
 
 **403 Forbidden:**
+
 ```json
 {
   "statusCode": 403,
@@ -1969,6 +2090,7 @@ All errors follow this format:
 ```
 
 **404 Not Found:**
+
 ```json
 {
   "statusCode": 404,
@@ -1982,20 +2104,23 @@ All errors follow this format:
 ## Enums Reference
 
 ### ProjectType
-```
+
+```text
 COMPLETED      // Finished projects (portfolio)
 PLAN_TO_BUY    // Construction plans available for purchase
 ```
 
 ### ProjectCategory
-```
+
+```text
 RESIDENTIAL    // Housing projects
 COMMERCIAL     // Business/commercial projects
 INDUSTRIAL     // Industrial projects
 ```
 
 ### JobApplicationStatus
-```
+
+```text
 NEW            // Just submitted
 IN_REVIEW      // Being reviewed
 SHORTLISTED    // Candidate selected for next round
@@ -2004,7 +2129,8 @@ HIRED          // Candidate hired
 ```
 
 ### ProjectDocumentType
-```
+
+```text
 PRESENTATION
 PERSPECTIVE
 SITE_PLAN
@@ -2029,14 +2155,16 @@ HEALTH_SAFETY_PLAN
 ```
 
 ### PurchaseStatus
-```
+
+```text
 PENDING        // Awaiting payment
 SUCCESS        // Payment completed
 FAILED         // Payment failed
 ```
 
 ### Role
-```
+
+```text
 CLIENT              // Can view projects, make purchases
 COMPANY_WORKER      // RIEC staff member
 ENGINEER            // Engineer with access
@@ -2068,26 +2196,30 @@ ADMIN               // Full administrative access
 ## Quick Reference: Client User Flow
 
 ### Option A: Email/Password Authentication
+
 1. **Register**: `POST /auth/register-client` → get JWT
 2. **Login**: `POST /auth/login` → get JWT (if already registered)
 
 ### Option B: Firebase Authentication (Google OAuth)
+
 1. **Firebase Login**: `POST /auth/firebase` with Firebase ID token → get JWT
    - Get ID token from frontend Firebase client SDK after Google sign-in
 
-3. **Browse Projects**: `GET /projects?type=PLAN_TO_BUY` (or omit type for all)
-4. **View Project**: `GET /projects/identifier/:id?include=pricingTiers,assets`
-5. **Initiate Purchase**: `POST /payments/project-checkout` → get payment link
-6. **Complete Payment**: Redirect to Flutterwave, wait for webhook
-7. **Access Downloads**:
+### Common Flow (After Authentication)
+
+1. **Browse Projects**: `GET /projects?type=PLAN_TO_BUY` (or omit type for all)
+2. **View Project**: `GET /projects/identifier/:id?include=pricingTiers,assets`
+3. **Initiate Purchase**: `POST /payments/project-checkout` → get payment link
+4. **Complete Payment**: Redirect to Flutterwave, wait for webhook
+5. **Access Downloads**:
    - Via email link: `GET /payments/downloads/:token`
    - Or logged in: `GET /projects/:projectId/purchases/:purchaseId/downloads`
-8. **View Purchase History**: `GET /purchases/my`
-9. **Manage Favorites**:
-   - Add to favorites: `POST /favorites/projects/:projectId`
-   - Remove from favorites: `DELETE /favorites/projects/:projectId`
+6. **View Purchase History**: `GET /purchases/my`
+7. **Manage Favorites**:
+   - Add to favorites: `POST /favorites/projects/:identifier`
+   - Remove from favorites: `DELETE /favorites/projects/:identifier`
    - View all favorites: `GET /favorites`
-   - Check if favorited: `GET /favorites/projects/:projectId/status`
+   - Check if favorited: `GET /favorites/projects/:identifier/status`
 
 ---
 
