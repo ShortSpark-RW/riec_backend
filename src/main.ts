@@ -21,6 +21,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:5173',
       'https://riec-frontend.onrender.com',
+      'https://riec.rw',
+      'https://www.riec.rw',
       ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
