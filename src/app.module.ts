@@ -19,6 +19,8 @@ import { CareersModule } from './careers/careers.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { SearchModule } from './search/search.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { SettingsModule } from './settings/settings.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
@@ -45,6 +47,8 @@ import { PrismaService } from './prisma/prisma.service';
     ApplicationsModule,
     PaymentsModule,
     SearchModule,
+    DashboardModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

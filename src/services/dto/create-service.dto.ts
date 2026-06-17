@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsBoolean,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -70,4 +71,11 @@ export class CreateServiceDto {
   @Type(() => ServiceTaskDto)
   @ApiPropertyOptional({ type: [ServiceTaskDto] })
   mainTasks?: ServiceTaskDto[];
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({ example: false, default: false })
+  isPublished?: boolean;
 }
+
+export class UpdateServiceDto extends PartialType(CreateServiceDto) {}

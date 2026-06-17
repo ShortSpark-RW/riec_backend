@@ -9,11 +9,11 @@ export class ServicesService {
 
   private parseIncludeQuery(include?: string) {
     if (!include) return {};
-    
-    const relations = include.split(',').map(rel => rel.trim());
+
+    const relations = include.split(',').map((rel) => rel.trim());
     const includeObj: any = {};
-    
-    relations.forEach(relation => {
+
+    relations.forEach((relation) => {
       switch (relation) {
         case 'images':
           includeObj.images = { orderBy: { order: 'asc' } };
@@ -23,10 +23,10 @@ export class ServicesService {
             where: { isPublished: true },
             include: {
               images: { orderBy: { order: 'asc' }, take: 1 },
-              _count: { select: { pricingTiers: true } }
+              _count: { select: { pricingTiers: true } },
             },
             orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-            take: 5
+            take: 5,
           };
           break;
         case 'counts':
@@ -34,7 +34,7 @@ export class ServicesService {
           break;
       }
     });
-    
+
     return includeObj;
   }
 
@@ -44,9 +44,9 @@ export class ServicesService {
 
   async list(page = 1, limit = 20, include?: string) {
     const { skip, take, meta } = paginate(page, limit);
-    
+
     const includeRelations = this.parseIncludeQuery(include);
-    
+
     const [data, total] = await Promise.all([
       this.prisma.service.findMany({
         orderBy: { order: 'asc' },
@@ -61,7 +61,7 @@ export class ServicesService {
 
   async findOne(id: string, include?: string) {
     const includeRelations = this.parseIncludeQuery(include);
-    
+
     const service = await this.prisma.service.findUnique({
       where: { id },
       include: includeRelations,
@@ -72,7 +72,7 @@ export class ServicesService {
 
   async findByIdentifier(identifier: string, include?: string) {
     const includeRelations = this.parseIncludeQuery(include);
-    
+
     // Try to find by ID first (MongoDB ObjectId format)
     if (identifier.match(/^[0-9a-fA-F]{24}$/)) {
       const service = await this.prisma.service.findUnique({
@@ -81,13 +81,13 @@ export class ServicesService {
       });
       if (service) return service;
     }
-    
+
     // If not found by ID or doesn't look like an ID, try by slug
     const service = await this.prisma.service.findUnique({
       where: { slug: identifier },
       include: includeRelations,
     });
-    
+
     if (!service) throw new NotFoundException('Service not found');
     return service;
   }
@@ -100,5 +100,21 @@ export class ServicesService {
   async remove(identifier: string) {
     const service = await this.findByIdentifier(identifier);
     await this.prisma.service.delete({ where: { id: service.id } });
+  }
+
+  async publish(identifier: string) {
+    const service = await this.findByIdentifier(identifier);
+    return this.prisma.service.update({
+      where: { id: service.id },
+      data: { isPublished: true },
+    });
+  }
+
+  async unpublish(identifier: string) {
+    const service = await this.findByIdentifier(identifier);
+    return this.prisma.service.update({
+      where: { id: service.id },
+      data: { isPublished: false },
+    });
   }
 }

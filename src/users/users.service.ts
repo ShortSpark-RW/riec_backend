@@ -1,5 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Role } from '../auth/role.enum';
 
 @Injectable()
 export class UsersService {
@@ -103,5 +109,128 @@ export class UsersService {
         updatedAt: true,
       },
     });
+  }
+
+  async getUsers(page: number, limit: number, role?: Role) {
+    const skip = (page - 1) * limit;
+
+    const where = role ? { role } : {};
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          profileImg: true,
+          coverImg: true,
+          createdAt: true,
+          lastLoginAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      data: users,
+      total,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getUserById(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        profileImg: true,
+        coverImg: true,
+        createdAt: true,
+        lastLoginAt: true,
+        updatedAt: true,
+        projectsOwned: true,
+        assignments: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  async updateUserRole(id: string, newRole: Role, requesterId: string) {
+    // Prevent self-downgrade
+    if (id === requesterId && newRole !== Role.ADMIN) {
+      throw new ForbiddenException(
+        'Cannot downgrade your own admin role. Please contact another admin.',
+      );
+    }
+
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { role: newRole },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        profileImg: true,
+        coverImg: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async deleteUser(id: string, requesterId: string) {
+    // Prevent self-deletion
+    if (id === requesterId) {
+      throw new ForbiddenException('Cannot delete your own account');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.prisma.user.delete({ where: { id } });
+  }
+
+  async getUserStats() {
+    const [total, adminCount, engineerCount, companyWorkerCount, clientCount] =
+      await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.user.count({ where: { role: Role.ADMIN } }),
+        this.prisma.user.count({ where: { role: Role.ENGINEER } }),
+        this.prisma.user.count({ where: { role: Role.COMPANY_WORKER } }),
+        this.prisma.user.count({ where: { role: Role.CLIENT } }),
+      ]);
+
+    return {
+      total,
+      ADMIN: adminCount,
+      ENGINEER: engineerCount,
+      COMPANY_WORKER: companyWorkerCount,
+      CLIENT: clientCount,
+    };
   }
 }

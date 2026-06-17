@@ -20,8 +20,11 @@ import {
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { ServicesService } from './services.service';
-import { CreateServiceDto } from './dto/create-service.dto';
+import { CreateServiceDto, UpdateServiceDto } from './dto/create-service.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../auth/role.enum';
+import { RolesGuard } from '../auth/roles.guard';
 import { ResponseMessage } from '../common/decorators/response-message.decorator';
 
 @ApiTags('services')
@@ -30,7 +33,8 @@ export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ResponseMessage('Service created successfully')
   @ApiOperation({
@@ -52,7 +56,10 @@ export class ServicesController {
         description: 'Rich content description...',
         process: 'Our process involves...',
         mainTasks: [
-          { title: 'Site Analysis', description: 'We assess the site conditions thoroughly.' },
+          {
+            title: 'Site Analysis',
+            description: 'We assess the site conditions thoroughly.',
+          },
         ],
         createdAt: '2024-01-15T10:30:00Z',
         updatedAt: '2024-01-15T10:30:00Z',
@@ -125,7 +132,6 @@ export class ServicesController {
     return this.servicesService.list(Number(page), Number(limit), include);
   }
 
-
   @Get('identifier/:identifier')
   @ResponseMessage('Service retrieved successfully')
   @ApiOperation({
@@ -135,7 +141,8 @@ export class ServicesController {
   })
   @ApiParam({
     name: 'identifier',
-    description: 'Either a MongoDB ObjectId (24 hex characters) or a service slug',
+    description:
+      'Either a MongoDB ObjectId (24 hex characters) or a service slug',
     example: 'architectural-design or 65f34e7e0a2b3c4d5e6f7890',
   })
   @ApiQuery({
@@ -162,8 +169,14 @@ export class ServicesController {
         description: 'Our comprehensive architectural design service...',
         process: 'Step 1: Consultation, Step 2: Design, Step 3: Approval',
         mainTasks: [
-          { title: 'Site Analysis', description: 'We assess the site conditions thoroughly.' },
-          { title: 'Concept Design', description: 'We create initial design concepts.' },
+          {
+            title: 'Site Analysis',
+            description: 'We assess the site conditions thoroughly.',
+          },
+          {
+            title: 'Concept Design',
+            description: 'We create initial design concepts.',
+          },
         ],
         images: [
           {
@@ -180,7 +193,9 @@ export class ServicesController {
             title: 'Modern Family Villa',
             slug: 'modern-family-villa',
             location: 'Lekki, Lagos',
-            images: [{ url: 'https://cdn.example.com/projects/proj1-thumb.jpg' }],
+            images: [
+              { url: 'https://cdn.example.com/projects/proj1-thumb.jpg' },
+            ],
             _count: { pricingTiers: 3 },
           },
         ],
@@ -199,7 +214,8 @@ export class ServicesController {
   }
 
   @Put('identifier/:identifier')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ResponseMessage('Service updated successfully')
   @ApiOperation({
@@ -227,12 +243,16 @@ export class ServicesController {
   @ApiNotFoundResponse({
     description: 'Service not found with the given identifier',
   })
-  update(@Param('identifier') identifier: string, @Body() dto: CreateServiceDto) {
+  update(
+    @Param('identifier') identifier: string,
+    @Body() dto: UpdateServiceDto,
+  ) {
     return this.servicesService.update(identifier, dto);
   }
 
   @Delete('identifier/:identifier')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ResponseMessage('Service deleted successfully')
   @ApiOperation({
@@ -256,5 +276,49 @@ export class ServicesController {
   })
   remove(@Param('identifier') identifier: string) {
     return this.servicesService.remove(identifier);
+  }
+
+  @Post('identifier/:identifier/publish')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ResponseMessage('Service published successfully')
+  @ApiOperation({
+    summary: 'Publish a service',
+    description:
+      'Makes a service visible in public listings. Requires admin authentication.',
+  })
+  @ApiParam({
+    name: 'identifier',
+    description: 'Service MongoDB ID or slug',
+    example: 'architectural-design or 65f34e7e0a2b3c4d5e6f7890',
+  })
+  @ApiOkResponse({
+    description: 'Service published successfully',
+  })
+  publish(@Param('identifier') identifier: string) {
+    return this.servicesService.publish(identifier);
+  }
+
+  @Post('identifier/:identifier/unpublish')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ResponseMessage('Service unpublished successfully')
+  @ApiOperation({
+    summary: 'Unpublish a service',
+    description:
+      'Hides a service from public listings. Requires admin authentication.',
+  })
+  @ApiParam({
+    name: 'identifier',
+    description: 'Service MongoDB ID or slug',
+    example: 'architectural-design or 65f34e7e0a2b3c4d5e6f7890',
+  })
+  @ApiOkResponse({
+    description: 'Service unpublished successfully',
+  })
+  unpublish(@Param('identifier') identifier: string) {
+    return this.servicesService.unpublish(identifier);
   }
 }
