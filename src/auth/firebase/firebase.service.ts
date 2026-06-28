@@ -36,8 +36,8 @@ export class FirebaseService implements OnModuleInit {
       this.initialized = true;
       this.logger.log('Firebase Admin initialized successfully');
     } catch (error) {
-      this.logger.error('Failed to initialize Firebase Admin:', error);
-      throw error;
+      // Log warning but don't crash - Firebase is optional for Google OAuth
+      this.logger.warn('Firebase Admin not initialized (optional for Google OAuth):', error);
     }
   }
 

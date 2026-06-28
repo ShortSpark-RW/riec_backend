@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../auth/role.enum';
+import { DashboardService } from './dashboard.service';
 
 @ApiTags('Dashboard')
 @Controller('dashboard')
@@ -11,7 +12,7 @@ import { Role } from '../auth/role.enum';
 @Roles(Role.ADMIN)
 @ApiBearerAuth()
 export class DashboardController {
-  constructor(private readonly dashboardService: any) {}
+  constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('stats')
   @ApiOperation({

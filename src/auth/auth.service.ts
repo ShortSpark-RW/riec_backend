@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Optional } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,7 +11,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly firebaseService: FirebaseService,
+    @Optional() private readonly firebaseService: FirebaseService,
   ) {}
 
   async validateAdmin(email: string, password: string) {
@@ -141,6 +141,9 @@ export class AuthService {
    * Supports account auto-linking by email
    */
   async firebaseLogin(idToken: string) {
+    if (!this.firebaseService) {
+      throw new UnauthorizedException('Firebase authentication is not configured');
+    }
     // 1. Verify Firebase ID token
     const decodedToken = await this.firebaseService.verifyIdToken(idToken);
     const firebaseUid = decodedToken.uid;
